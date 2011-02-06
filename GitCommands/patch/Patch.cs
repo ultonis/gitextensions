@@ -89,7 +89,7 @@ namespace PatchApply
             return _textBuilder ?? (_textBuilder = new StringBuilder());
         }
 
-        private string LoadFile(string fileName)
+        private string loadFile(string fileName)
         {
             try
             {
@@ -117,7 +117,7 @@ namespace PatchApply
         private void HandleChangeFilePatchType()
         {
             var fileLines = new List<string>();
-            foreach (string s in LoadFile(FileNameA).Split('\n'))
+            foreach (string s in loadFile(FileNameA).Split('\n'))
             {
                 fileLines.Add(s);
             }
