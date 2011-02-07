@@ -25,8 +25,8 @@ namespace GitCommandsTests
             var testPatch = Encoding.UTF8.GetString(TestResource.TestPatch);
             manager.LoadPatch(testPatch, false);
 
-            Assert.AreEqual(11, manager.Patches.Select(p => p.FileNameA).Distinct().Count());
-            Assert.AreEqual(11, manager.Patches.Select(p => p.FileNameB).Distinct().Count());
+            Assert.AreEqual(12, manager.Patches.Select(p => p.FileNameA).Distinct().Count());
+            Assert.AreEqual(12, manager.Patches.Select(p => p.FileNameB).Distinct().Count());
         }
 
         [TestMethod]

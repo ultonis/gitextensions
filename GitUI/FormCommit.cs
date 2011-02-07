@@ -147,7 +147,7 @@ namespace GitUI
             if (_currentItemStaged) //staged
                 args += " --reverse";
 
-            string patch = PatchManager.GetSelectedLinesAsPatch(SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(), _currentItemStaged);
+            string patch = Patch.GetSelectedLinesAsPatch(SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(), _currentItemStaged);
 
             if (!string.IsNullOrEmpty(patch))
             {
@@ -167,7 +167,7 @@ namespace GitUI
             if (_currentItemStaged) //staged
                 args += " --index";
 
-            string patch = PatchManager.GetSelectedLinesAsPatch(SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(), true);
+            string patch = Patch.GetSelectedLinesAsPatch(SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(), true);
 
             if (!string.IsNullOrEmpty(patch))
             {
