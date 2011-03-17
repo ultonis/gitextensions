@@ -37,6 +37,12 @@ namespace GitUI
                                                  Environment.GetEnvironmentVariable("USERPROFILE"));
         }
 
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            base.OnClosing(e);
+            SavePosition("settings");
+        }
+
         private int selectedScriptItem { get; set; }
 
         public static bool AutoSolveAllSettings()
@@ -210,7 +216,7 @@ namespace GitUI
 
                 SmtpServer.Text = Settings.Smtp;
 
-                _NO_TRANSLATE_MaxCommits.Value = Settings.MaxCommits;
+                _NO_TRANSLATE_MaxCommits.Value = Settings.MaxRevisionGraphCommits;
 
                 GitPath.Text = Settings.GitCommand;
                 GitBinPath.Text = Settings.GitBinDir;
@@ -296,7 +302,6 @@ namespace GitUI
                 AutostartPageant.Checked = Settings.AutoStartPageant;
 
                 CloseProcessDialog.Checked = Settings.CloseProcessDialog;
-                ShowRevisionGraph.Checked = Settings.ShowRevisionGraph;
                 ShowGitCommandLine.Checked = Settings.ShowGitCommandLine;
 
                 UseFastChecks.Checked = Settings.UseFastChecks;
@@ -332,24 +337,27 @@ namespace GitUI
 
         private bool Save()
         {
-            if (otherHome.Checked)
+            if (Settings.RunningOnWindows())
             {
-                Settings.UserProfileHomeDir = false;
-                if (string.IsNullOrEmpty(otherHomeDir.Text))
+                if (otherHome.Checked)
                 {
-                    MessageBox.Show("Please enter a valid HOME directory.");
-                    new FormFixHome().ShowDialog();
+                    Settings.UserProfileHomeDir = false;
+                    if (string.IsNullOrEmpty(otherHomeDir.Text))
+                    {
+                        MessageBox.Show("Please enter a valid HOME directory.");
+                        new FormFixHome().ShowDialog();
+                    }
+                    else
+                        Settings.CustomHomeDir = otherHomeDir.Text;
                 }
                 else
-                    Settings.CustomHomeDir = otherHomeDir.Text;
-            }
-            else
-            {
-                Settings.CustomHomeDir = "";
-                Settings.UserProfileHomeDir = userprofileHome.Checked;
-            }
+                {
+                    Settings.CustomHomeDir = "";
+                    Settings.UserProfileHomeDir = userprofileHome.Checked;
+                }
 
-            FormFixHome.CheckHomePath();
+                FormFixHome.CheckHomePath();
+            }
 
             GitCommandHelpers.SetEnvironmentVariable(true);
 
@@ -377,7 +385,6 @@ namespace GitUI
             Settings.GravatarFallbackService = noImageService.Text;
 
             Settings.CloseProcessDialog = CloseProcessDialog.Checked;
-            Settings.ShowRevisionGraph = ShowRevisionGraph.Checked;
             Settings.ShowGitCommandLine = ShowGitCommandLine.Checked;
 
             Settings.UseFastChecks = UseFastChecks.Checked;
@@ -385,7 +392,7 @@ namespace GitUI
 
             Settings.Dictionary = Dictionary.Text;
 
-            Settings.MaxCommits = (int)_NO_TRANSLATE_MaxCommits.Value;
+            Settings.MaxRevisionGraphCommits = (int)_NO_TRANSLATE_MaxCommits.Value;
 
             Settings.Plink = PlinkPath.Text;
             Settings.Puttygen = PuttygenPath.Text;
@@ -624,7 +631,7 @@ namespace GitUI
         {
             string fileName = GetGitExtensionsDirectory();
 
-            if (File.Exists(fileName))
+            if (Directory.Exists(fileName))
             {
                 Settings.SetInstallDir(fileName);
                 return true;
@@ -861,6 +868,7 @@ namespace GitUI
             }
 
             MessageBox.Show("Git can be run using: " + Settings.GitCommand, "Locate git");
+
             GitPath.Text = Settings.GitCommand;
             Rescan_Click(null, null);
         }
@@ -1343,6 +1351,7 @@ namespace GitUI
         {
             Cursor.Current = Cursors.WaitCursor;
             WindowState = FormWindowState.Normal;
+            RestorePosition("settings");
             LoadSettings();
             CheckSettings();
             WindowState = FormWindowState.Normal;
@@ -1616,7 +1625,7 @@ namespace GitUI
                 DifftoolCmd.Text = "\"" + DifftoolPath.Text + "\" \"$LOCAL\" \"$REMOTE\"";
         }
 
-        private static void helpTranslate_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void helpTranslate_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             new FormTranslate().ShowDialog();
         }
@@ -1743,9 +1752,18 @@ namespace GitUI
                 GitFound_Fix.Visible = true;
                 return false;
             }
+
+            if (GitCommandHelpers.VersionInUse < GitVersion.LastSupportedVersion)
+            {
+                GitFound.BackColor = Color.LightSalmon;
+                GitFound.Text = "Git found but version " + GitCommandHelpers.VersionInUse.ToString() + " is not supported. Upgrage to version " + GitVersion.LastSupportedVersion.ToString() + " or later.";
+                GitFound_Fix.Visible = true;
+                return false;
+            }
+
             GitFound_Fix.Visible = false;
             GitFound.BackColor = Color.LightGreen;
-            GitFound.Text = "Git is found on your computer.";
+            GitFound.Text = "Git " + GitCommandHelpers.VersionInUse.ToString() + " is found on your computer.";
             return true;
         }
 
@@ -1860,6 +1878,7 @@ namespace GitUI
                 return true;
 
             ShellExtensionsRegistered.Visible = true;
+
             if (
                 string.IsNullOrEmpty(GetRegistryValue(Registry.LocalMachine,
                                                       "Software\\Microsoft\\Windows\\CurrentVersion\\Shell Extensions\\Approved",
@@ -1872,6 +1891,16 @@ namespace GitUI
                                                       "Directory\\Background\\shellex\\ContextMenuHandlers\\GitExtensions2",
                                                       null)))
             {
+                //Check if shell extensions are installed
+                string path = Path.Combine(Settings.GetInstallDir(), GitExtensionsShellExName);
+                if (!File.Exists(path))
+                {
+                    ShellExtensionsRegistered.BackColor = Color.LightGreen;
+                    ShellExtensionsRegistered.Text = String.Format("Shell extensions are not installed. Run the installer to intall the shell extensions.");
+                    ShellExtensionsRegistered_Fix.Visible = false;
+                    return true;
+                }
+
                 ShellExtensionsRegistered.BackColor = Color.LightSalmon;
                 ShellExtensionsRegistered.Text = String.Format("{0} needs to be registered in order to use the shell extensions.", GitExtensionsShellExName);
                 ShellExtensionsRegistered_Fix.Visible = true;
@@ -2185,7 +2214,7 @@ namespace GitUI
             Rescan_Click(null, null);
         }
 
-        private static void downloadDictionary_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void downloadDictionary_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             Process.Start(@"http://code.google.com/p/gitextensions/wiki/Spelling");
         }

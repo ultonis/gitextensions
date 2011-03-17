@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
-using System.Linq;
 using System.Windows.Forms;
 using GitCommands;
 using GitUI.Properties;
@@ -16,22 +15,30 @@ namespace GitUI
             InitializeComponent(); Translate();
 
             FileStatusListBox.DrawMode = DrawMode.OwnerDrawVariable;
-            FileStatusListBox.MeasureItem += FileStatusListBox_MeasureItem;
-            FileStatusListBox.DrawItem += FileStatusListBox_DrawItem;
-            FileStatusListBox.SelectedIndexChanged += FileStatusListBox_SelectedIndexChanged;
-            FileStatusListBox.DoubleClick += FileStatusListBox_DoubleClick;
-            FileStatusListBox.MouseMove += FileStatusListBox_MouseMove;
+            FileStatusListBox.MeasureItem += new MeasureItemEventHandler(FileStatusListBox_MeasureItem);
+            FileStatusListBox.DrawItem += new DrawItemEventHandler(FileStatusListBox_DrawItem);
+            FileStatusListBox.SelectedIndexChanged += new EventHandler(FileStatusListBox_SelectedIndexChanged);
+            FileStatusListBox.DoubleClick += new EventHandler(FileStatusListBox_DoubleClick);
+            FileStatusListBox.MouseMove += new MouseEventHandler(FileStatusListBox_MouseMove);
             FileStatusListBox.Sorted = true;
             FileStatusListBox.SelectionMode = SelectionMode.MultiExtended;
-            FileStatusListBox.MouseDown += FileStatusListBox_MouseDown;
+            FileStatusListBox.MouseDown += new MouseEventHandler(FileStatusListBox_MouseDown);
 
             NoFiles.Visible = false;
             NoFiles.Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Italic);
         }
 
+        public override bool Focused
+        {
+            get
+            {
+                return FileStatusListBox.Focused;
+            }
+        }
+
         void FileStatusListBox_MeasureItem(object sender, MeasureItemEventArgs e)
         {
-            e.ItemHeight = (int)e.Graphics.MeasureString(FileStatusListBox.Items[e.Index].ToString(), FileStatusListBox.Font).Height;
+            e.ItemHeight = Math.Max((int)e.Graphics.MeasureString(((GitItemStatus)FileStatusListBox.Items[e.Index]).Name, FileStatusListBox.Font).Height, 16);
         }
 
         public void SetNoFilesText(string text)
@@ -44,7 +51,7 @@ namespace GitUI
             //SELECT
             if (e.Button == MouseButtons.Right)
             {
-                var point = new Point(e.X, e.Y);
+                Point point = new Point(e.X, e.Y);
                 int hoverIndex = FileStatusListBox.IndexFromPoint(point);
 
                 if (hoverIndex >= 0)
@@ -119,7 +126,7 @@ namespace GitUI
             {
                 if (SelectedItems.Count > 0)
                 {
-                    var fileList = new StringCollection();
+                    StringCollection fileList = new StringCollection();
 
                     foreach (GitItemStatus item in SelectedItems)
                     {
@@ -128,7 +135,7 @@ namespace GitUI
                         fileList.Add(fileName.Replace('/', '\\'));
                     }
 
-                    var obj = new DataObject();
+                    DataObject obj = new DataObject();
                     obj.SetFileDropList(fileList);
 
                     // Proceed with the drag and drop, passing in the list item.                   
@@ -138,22 +145,28 @@ namespace GitUI
             }
 
             //TOOLTIP
-            var listBox = sender as ListBox;
+            ListBox listBox = sender as ListBox;
             if (listBox != null)
             {
-                var point = new Point(e.X, e.Y);
+                Point point = new Point(e.X, e.Y);
                 int hoverIndex = listBox.IndexFromPoint(point);
                 if (hoverIndex >= 0 && hoverIndex <= listBox.Items.Count)
                 {
-                    string text = listBox.Items[hoverIndex].ToString();
+                    GitItemStatus gitItemStatus = (GitItemStatus)listBox.Items[hoverIndex];
 
-                    float fTextWidth = listBox.CreateGraphics().MeasureString(text, listBox.Font).Width;
+                    string text;
+                    if (gitItemStatus.IsRenamed || gitItemStatus.IsCopied)
+                        text = string.Concat(gitItemStatus.Name, " (", gitItemStatus.OldName, ")");
+                    else
+                        text = gitItemStatus.Name;
+
+                    float fTextWidth = listBox.CreateGraphics().MeasureString(text, listBox.Font).Width + 17;
 
                     //Use width-itemheight because the icon drawn in front of the text is the itemheight
                     if (fTextWidth > (FileStatusListBox.Width - FileStatusListBox.ItemHeight))
                     {
-                        if (!DiffFilesTooltip.GetToolTip(listBox).Equals(text))
-                            DiffFilesTooltip.SetToolTip(listBox, text);
+                        if (!DiffFilesTooltip.GetToolTip(listBox).Equals(gitItemStatus.ToString()))
+                            DiffFilesTooltip.SetToolTip(listBox, gitItemStatus.ToString());
                     }
                     else
                         DiffFilesTooltip.RemoveAll();
@@ -169,7 +182,13 @@ namespace GitUI
         {
             get
             {
-                return FileStatusListBox.SelectedItems.Cast<GitItemStatus>().ToList();
+                IList<GitItemStatus> selectedItems = new List<GitItemStatus>();
+                foreach (object selectedItem in FileStatusListBox.SelectedItems)
+                {
+                    selectedItems.Add((GitItemStatus)selectedItem);
+                }
+
+                return selectedItems;
             }
         }
 
@@ -192,10 +211,10 @@ namespace GitUI
 
         void FileStatusListBox_DoubleClick(object sender, EventArgs e)
         {
-            if (DoubleClick == null)
+            if (this.DoubleClick == null)
                 GitUICommands.Instance.StartFileHistoryDialog(SelectedItem.Name, Revision);
             else
-                DoubleClick(sender, e);
+                this.DoubleClick(sender, e);
         }
 
         void FileStatusListBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -211,24 +230,37 @@ namespace GitUI
                 e.DrawBackground();
                 e.DrawFocusRectangle();
 
-                var gitItemStatus = (GitItemStatus)FileStatusListBox.Items[e.Index];
+                GitItemStatus gitItemStatus = (GitItemStatus)FileStatusListBox.Items[e.Index];
+
+                e.Graphics.FillRectangle(Brushes.White, e.Bounds.Left, e.Bounds.Top, 16, e.Bounds.Height);
+
+                int centeredImageTop = e.Bounds.Top;
+                if ((e.Bounds.Height - 16) > 1)
+                    centeredImageTop = e.Bounds.Top + ((e.Bounds.Height - 16) / 2);
+
 
                 if (gitItemStatus.IsDeleted)
-                    e.Graphics.DrawImage(Resources.Removed, e.Bounds.Left, e.Bounds.Top, e.Bounds.Height, e.Bounds.Height);
+                    e.Graphics.DrawImage(Resources.Removed, e.Bounds.Left, centeredImageTop, 16, 16);
                 else
-                {
                     if (gitItemStatus.IsNew || !gitItemStatus.IsTracked)
-                    {
-                        e.Graphics.DrawImage(Resources.Added, e.Bounds.Left, e.Bounds.Top, e.Bounds.Height,
-                                             e.Bounds.Height);
-                    }
-                    else if (gitItemStatus.IsChanged)
-                    {
-                        e.Graphics.DrawImage(Resources.Modified, e.Bounds.Left, e.Bounds.Top, e.Bounds.Height,
-                                             e.Bounds.Height);
-                    }
-                }
-                e.Graphics.DrawString(gitItemStatus.Name, FileStatusListBox.Font, new SolidBrush(e.ForeColor), e.Bounds.Left + e.Bounds.Height, e.Bounds.Top);
+                        e.Graphics.DrawImage(Resources.Added, e.Bounds.Left, centeredImageTop, 16, 16);
+                    else
+                        if (gitItemStatus.IsChanged)
+                            e.Graphics.DrawImage(Resources.Modified, e.Bounds.Left, centeredImageTop, 16, 16);
+                        else
+                            if (gitItemStatus.IsRenamed)
+                                e.Graphics.DrawImage(Resources.Renamed, e.Bounds.Left, centeredImageTop, 16, 16);
+                            else
+                                if (gitItemStatus.IsCopied)
+                                    e.Graphics.DrawImage(Resources.Copied, e.Bounds.Left, centeredImageTop, 16, 16);
+
+                string text;
+                if (gitItemStatus.IsRenamed || gitItemStatus.IsCopied)
+                    text = string.Concat(gitItemStatus.Name, " (", gitItemStatus.OldName, ")");
+                else
+                    text = gitItemStatus.Name;
+
+                e.Graphics.DrawString(text, FileStatusListBox.Font, new SolidBrush(e.ForeColor), e.Bounds.Left + 16, e.Bounds.Top);
             }
         }
 
@@ -288,8 +320,8 @@ namespace GitUI
                         break;
                     }
                 default:
-                    if (KeyDown != null)
-                        KeyDown(sender, e);
+                    if (this.KeyDown != null)
+                        this.KeyDown(sender, e);
                     break;
             }
                 

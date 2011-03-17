@@ -54,6 +54,7 @@ namespace GitCommands
             Parents,
             Tree,
             AuthorName,
+            AuthorEmail,
             AuthorDate,
             CommitterName,
             CommitterDate,
@@ -90,7 +91,7 @@ namespace GitCommands
             }
         }
 
-        public string LogParam = "HEAD --all";
+        public string LogParam = "HEAD --all";//--branches --remotes --tags";
         public string BranchFilter = String.Empty;
         public RevisionGraphInMemFilter InMemFilter = null;
 
@@ -129,6 +130,7 @@ namespace GitCommands
                     formatString +=
                         /* Tree           */ "%T%n" +
                         /* Author Name    */ "%aN%n" +
+                        /* Author Email    */ "%aE%n" +                            
                         /* Author Date    */ "%ai%n" +
                         /* Committer Name */ "%cN%n" +
                         /* Committer Date */ "%ci%n" +
@@ -259,6 +261,10 @@ namespace GitCommands
 
                 case ReadStep.AuthorName:
                     revision.Author = line;
+                    break;
+
+                case ReadStep.AuthorEmail:
+                    revision.AuthorEmail = line;
                     break;
 
                 case ReadStep.AuthorDate:

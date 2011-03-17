@@ -11,6 +11,14 @@ namespace GitUI
             Translate();
         }
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+
+            LimitCheck.Checked = Settings.MaxRevisionGraphCommits > 0;
+            _NO_TRANSLATE_Limit.Value = Settings.MaxRevisionGraphCommits;
+        }
+
         private void FormRevisionFilterLoad(object sender, EventArgs e)
         {
             EnableFilters();
@@ -51,27 +59,43 @@ namespace GitUI
                                    !CurrentBranchOnlyCheck.Checked;
         }
 
+        public bool FilterEnabled()
+        {
+            return (AuthorCheck.Checked ||
+                    CommitterCheck.Checked ||
+                    MessageCheck.Checked ||
+                    SinceCheck.Checked ||
+                    CheckUntil.Checked ||
+                    FileFilterCheck.Checked);                
+        }
+
         public string GetFilter()
         {
             var filter = "";
-            if (SinceCheck.Checked)
-                filter += string.Format(" --since=\"{0}\"", Since.Value);
-            if (CheckUntil.Checked)
-                filter += string.Format(" --until=\"{0}\"", Until.Value);
             if (AuthorCheck.Checked && GitCommandHelpers.VersionInUse.IsRegExStringCmdPassable(Author.Text))
                 filter += string.Format(" --author=\"{0}\"", Author.Text);
             if (CommitterCheck.Checked && GitCommandHelpers.VersionInUse.IsRegExStringCmdPassable(Committer.Text))
                 filter += string.Format(" --committer=\"{0}\"", Committer.Text);
             if (MessageCheck.Checked && GitCommandHelpers.VersionInUse.IsRegExStringCmdPassable(Message.Text))
                 filter += string.Format(" --grep=\"{0}\"", Message.Text);
-            if (LimitCheck.Checked)
-                filter += string.Format(" --max-count=\"{0}\"", ((int)_NO_TRANSLATE_Limit.Value));
             if (!string.IsNullOrEmpty(filter) && IgnoreCase.Checked)
                 filter += " --regexp-ignore-case";
+            if (SinceCheck.Checked)
+                filter += string.Format(" --since=\"{0}\"", Since.Value.ToString("yyyy-MM-dd hh:mm:ss"));
+            if (CheckUntil.Checked)
+                filter += string.Format(" --until=\"{0}\"", Until.Value.ToString("yyyy-MM-dd hh:mm:ss"));
+            if (Settings.MaxRevisionGraphCommits > 0)
+                filter += string.Format(" --max-count=\"{0}\"", Settings.MaxRevisionGraphCommits);
             if (FileFilterCheck.Checked)
                 filter += string.Format(" -- \"{0}\"", FileFilter.Text.Replace('\\', '/'));
 
             return filter;
+        }
+
+        public bool ShouldHideGraph()
+        {
+            return AuthorCheck.Checked || CommitterCheck.Checked ||
+                   MessageCheck.Checked || FileFilterCheck.Checked;
         }
 
         public string GetInMemAuthorFilter()
@@ -111,10 +135,15 @@ namespace GitUI
         public void SetBranchFilter(string filter)
         {
             BranchFilter.Text = filter;
+        
         }
 
         private void OkClick(object sender, EventArgs e)
         {
+            if (LimitCheck.Checked)
+                Settings.MaxRevisionGraphCommits = (int)_NO_TRANSLATE_Limit.Value;
+            else
+                Settings.MaxRevisionGraphCommits = 0;
             Close();
         }
     }

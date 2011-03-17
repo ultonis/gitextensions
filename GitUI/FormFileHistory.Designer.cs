@@ -31,11 +31,13 @@ namespace GitUI
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FormFileHistory));
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.FileChanges = new GitUI.RevisionGrid();
             this.DiffContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.openWithDifftoolToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.saveAsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.followFileHistoryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.ViewTab = new System.Windows.Forms.TabPage();
             this.View = new GitUI.Editor.FileViewer();
@@ -78,10 +80,14 @@ namespace GitUI
             this.FileChanges.AllowGraphWithFilter = false;
             this.FileChanges.BranchFilter = "";
             this.FileChanges.ContextMenuStrip = this.DiffContextMenu;
-            this.FileChanges.CurrentCheckout = resources.GetString("FileChanges.CurrentCheckout");
+            this.FileChanges.CurrentCheckout = "";
             this.FileChanges.Dock = System.Windows.Forms.DockStyle.Fill;
             this.FileChanges.Filter = "";
             this.FileChanges.Font = new System.Drawing.Font("Tahoma", 8.25F);
+            this.FileChanges.InMemAuthorFilter = "";
+            this.FileChanges.InMemCommitterFilter = "";
+            this.FileChanges.InMemFilterIgnoreCase = false;
+            this.FileChanges.InMemMessageFilter = "";
             this.FileChanges.LastRow = 0;
             this.FileChanges.Location = new System.Drawing.Point(0, 0);
             this.FileChanges.Name = "FileChanges";
@@ -93,9 +99,12 @@ namespace GitUI
             // DiffContextMenu
             // 
             this.DiffContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.openWithDifftoolToolStripMenuItem});
+            this.openWithDifftoolToolStripMenuItem,
+            this.saveAsToolStripMenuItem,
+            this.toolStripSeparator1,
+            this.followFileHistoryToolStripMenuItem});
             this.DiffContextMenu.Name = "DiffContextMenu";
-            this.DiffContextMenu.Size = new System.Drawing.Size(191, 48);
+            this.DiffContextMenu.Size = new System.Drawing.Size(214, 98);
             // 
             // openWithDifftoolToolStripMenuItem
             // 
@@ -104,6 +113,25 @@ namespace GitUI
             this.openWithDifftoolToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
             this.openWithDifftoolToolStripMenuItem.Text = "Open with difftool";
             this.openWithDifftoolToolStripMenuItem.Click += new System.EventHandler(this.OpenWithDifftoolToolStripMenuItemClick);
+            // 
+            // saveAsToolStripMenuItem
+            // 
+            this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
+            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(190, 22);
+            this.saveAsToolStripMenuItem.Text = "Save as";
+            this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(187, 6);
+            // 
+            // followFileHistoryToolStripMenuItem
+            // 
+            this.followFileHistoryToolStripMenuItem.Name = "followFileHistoryToolStripMenuItem";
+            this.followFileHistoryToolStripMenuItem.Size = new System.Drawing.Size(213, 22);
+            this.followFileHistoryToolStripMenuItem.Text = "Detect and follow renames";
+            this.followFileHistoryToolStripMenuItem.Click += new System.EventHandler(this.followFileHistoryToolStripMenuItem_Click);
             // 
             // tabControl1
             // 
@@ -187,7 +215,7 @@ namespace GitUI
             this.blameControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.blameControl1.Location = new System.Drawing.Point(0, 0);
             this.blameControl1.Name = "blameControl1";
-            this.blameControl1.Size = new System.Drawing.Size(740, 301);
+            this.blameControl1.Size = new System.Drawing.Size(740, 303);
             this.blameControl1.TabIndex = 0;
             // 
             // eventLog1
@@ -232,5 +260,8 @@ namespace GitUI
         private System.Windows.Forms.ContextMenuStrip DiffContextMenu;
         private System.Windows.Forms.ToolStripMenuItem openWithDifftoolToolStripMenuItem;
         private Blame.BlameControl blameControl1;
+        private System.Windows.Forms.ToolStripMenuItem saveAsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
+        private System.Windows.Forms.ToolStripMenuItem followFileHistoryToolStripMenuItem;
     }
 }

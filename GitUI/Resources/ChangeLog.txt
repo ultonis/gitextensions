@@ -1,10 +1,56 @@
-Changelog
+﻿Changelog
 =========
 
+Version 2.17
+	Fixed exception thrown while loading Visual Studio plugin
+	Fixed refresh issues
+
+Version 2.16
+	Fixed refresh issues
+
+Version 2.15
+	Fixed issue 399: blame is showing source code double space
+	Fixed issue 400: commit summary with polish letters in author names shown incorrect
+	Fixed "show ignored files" in commit dialog
+	Fixed context menu on web project in Visual Studio
+	Fixed view pull request in GitHub plugin
+	Fixed "Open with difftool" when comparing two or more commits
+	Fixed problem with polish "ń" letter and sudden font change
+	Added "Follow file history" to file history context menu
+	Added hotkeys for FileViewer and FormResolveConflicts
+	Added advanced option to merge dialog
+	Added "Go to commit"
+	Installer checks for .Net 3.5
+	Updated stash view
+	Updated kdiff3 to version 0.9.95-2
+	Various bugfixes and minor changes
+
+Version 2.14
+	Fixed crash when viewing binary file in blame
+	Fixed settings dialog on Linux host
+	Fixed commit dialog on Linux host
+	Added option to edit git notes
+	Added settings page to configure hotkeys
+	Removed shell extensions check when it is not installed
+
+Version 2.13
+	Fixed issue 391: application crashes when repository favourites contains empty item
+	Double click on line in blame jumps to commit instead of opening commit
+	
 Version 2.12
 	Fixed issue 368: Browse button does not open dialog in HOME dialog
+	Fixed issue 373: Archive command is not working
+	Fixed issue 376: Added "Save As" button to file history
+	Fixed issue 379: Find Window Sticks in Windows XP Taskbar
+	Fixed issue 381: autostash is not needed when fetching without merge or rebase
+	Fixed "Open With" and "Open" on binairy files
+	Added "dirty index" icon to formbrowse
+	Added hotkey support to CommitForm for keyboard navigation (Ctrl+1 t/m Ctrl+5)
 	Added impact graph plugin
-	Updated msysgit to version 1.7.4
+	Added Simplified Chinese translation
+	Added support for renamed and copied files
+	Added support for git notes
+	Various bugfixes and minor changes
 
 Version 2.11
 	Fixed crash when refreshing repository grid

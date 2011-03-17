@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Windows.Forms;
 using GitCommands;
 using GitCommands.Repository;
@@ -79,7 +78,11 @@ namespace GitExtensions
             }
 
             if (string.IsNullOrEmpty(Settings.WorkingDir))
-                Settings.WorkingDir = Directory.GetCurrentDirectory();
+            {
+                string findWorkingDir = GitCommandHelpers.FindGitWorkingDir(Directory.GetCurrentDirectory());
+                if (Settings.ValidWorkingDir(findWorkingDir))
+                    Settings.WorkingDir = findWorkingDir;
+            }
 
             FormSplash.Hide();
 
@@ -175,7 +178,8 @@ namespace GitExtensions
                         {
                             using (var formEditor = new FormEditor(args[2]))
                             {
-                                formEditor.ShowDialog();
+                                if (formEditor.ShowDialog() == DialogResult.Cancel)
+                                    System.Environment.ExitCode = -1;
                             }
                         }
                         else
@@ -226,10 +230,9 @@ namespace GitExtensions
 
         private static string GetParameterOrEmptyStringAsDefault(string[] args, string paramName)
         {
-            if (args.Any(arg => arg.StartsWith(paramName + "=")))
-            {
-                return args[2].Replace(paramName + "=", "");
-            }
+            foreach (string arg in args)
+                if (arg.StartsWith(paramName + "="))
+                    return args[2].Replace(paramName + "=", "");
 
             return string.Empty;
         }

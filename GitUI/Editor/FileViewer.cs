@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using GitCommands;
 using ICSharpCode.TextEditor.Util;
 using PatchApply;
+using GitUI.Hotkey;
 
 namespace GitUI.Editor
 {
@@ -30,6 +31,8 @@ namespace GitUI.Editor
             else
                 _internalFileViewer = new FileViewerMono();
 
+            _internalFileViewer.MouseMove += new MouseEventHandler(_internalFileViewer_MouseMove);
+
             Control internalFileViewerControl = (Control)_internalFileViewer;
             internalFileViewerControl.Dock = DockStyle.Fill;
             Controls.Add(internalFileViewerControl);
@@ -53,6 +56,14 @@ namespace GitUI.Editor
             _internalFileViewer.ScrollPosChanged += new EventHandler(_internalFileViewer_ScrollPosChanged);
             _internalFileViewer.SelectedLineChanged += new SelectedLineChangedEventHandler(_internalFileViewer_SelectedLineChanged);
             _internalFileViewer.DoubleClick += (sender, args) => OnRequestDiffView(EventArgs.Empty);
+
+            this.HotkeysEnabled = true;
+            this.Hotkeys = HotkeySettingsManager.LoadHotkeys(HotkeySettingsName);
+        }
+
+        void _internalFileViewer_MouseMove(object sender, MouseEventArgs e)
+        {
+            this.OnMouseMove(e);
         }
 
         void _internalFileViewer_SelectedLineChanged(object sender, int selectedLine)
@@ -214,9 +225,9 @@ namespace GitUI.Editor
 
 
 
-        public void ViewCurrentChanges(string fileName, bool staged)
+        public void ViewCurrentChanges(string fileName, string oldFileName, bool staged)
         {
-            _async.Load(() => GitCommandHelpers.GetCurrentChanges(fileName, staged, GetExtraDiffArguments()), ViewStagingPatch);
+            _async.Load(() => GitCommandHelpers.GetCurrentChanges(fileName, oldFileName, staged, GetExtraDiffArguments()), ViewStagingPatch);
         }
 
         public void ViewStagingPatch(string text)
@@ -556,6 +567,26 @@ namespace GitUI.Editor
             //TextEditor.ActiveTextAreaControl.TextArea.TextView.FirstVisibleLine = totalNumberOfLines - TextEditor.ActiveTextAreaControl.TextArea.TextView.VisibleLineCount;
         }
 
+        public int GetLineFromVisualPosY(int visualPosY)
+        {
+            return _internalFileViewer.GetLineFromVisualPosY(visualPosY);
+        }
+
+        public string GetLineText(int line)
+        {
+            return _internalFileViewer.GetLineText(line);
+        }
+
+        public void HighlightLine(int line, Color color)
+        {
+            _internalFileViewer.HighlightLine(line, color);
+        }
+
+        public void ClearHighlighting()
+        {
+            _internalFileViewer.ClearHighlighting();
+        }
+
         private void PreviousChangeButtonClick(object sender, EventArgs e)
         {
             var firstVisibleLine = _internalFileViewer.FirstVisibleLine;
@@ -621,5 +652,38 @@ namespace GitUI.Editor
         {
             IgnoreWhitespaceChangesToolStripMenuItemClick(null, null);
         }
+
+        #region Hotkey commands
+
+        public const string HotkeySettingsName = "FileViewer";
+
+        internal enum Commands : int
+        {
+            Find,
+            IncreaseNumberOfVisibleLines,
+            DecreaseNumberOfVisibleLines,
+            ShowEntireFile,
+            TreatFileAsText
+
+        }
+
+        protected override bool ExecuteCommand(int cmd)
+        {
+            Commands command = (Commands)cmd;
+
+            switch (command)
+            {
+                case Commands.Find: this.FindToolStripMenuItemClick(null, null); break;
+                case Commands.IncreaseNumberOfVisibleLines: this.IncreaseNumberOfLinesToolStripMenuItemClick(null, null); break;
+                case Commands.DecreaseNumberOfVisibleLines: this.DescreaseNumberOfLinesToolStripMenuItemClick(null, null); break;
+                case Commands.ShowEntireFile: this.ShowEntireFileToolStripMenuItemClick(null, null); break;
+                case Commands.TreatFileAsText: this.TreatAllFilesAsTextToolStripMenuItemClick(null, null); break;
+            }
+
+            return true;
+        }
+
+        #endregion
+
     }
 }

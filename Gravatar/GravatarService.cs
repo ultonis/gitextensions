@@ -10,6 +10,7 @@ namespace Gravatar
     public class GravatarService
     {
         static IImageCache cache;
+        static object gravatarServiceLock = new object();
 
         public enum FallBackService
         {
@@ -28,9 +29,8 @@ namespace Gravatar
             cache.DeleteCachedFile(imageFileName);
         }
 
-        public static void LoadCachedImage(string imageFileName, string email, Bitmap defaultBitmap, int cacheDays,
-                                             int imageSize, string imageCachePath, Action<Image> onChangedImage,
-                                             FallBackService fallBack)
+        public static Image GetImageFromCache(string imageFileName, string email, int cacheDays,
+                                             int imageSize, string imageCachePath, FallBackService fallBack)
         {
             try
             {
@@ -41,14 +41,45 @@ namespace Gravatar
                 if (!cache.FileIsCached(imageFileName) ||
                     cache.FileIsExpired(imageFileName, cacheDays))
                 {
-                    onChangedImage(defaultBitmap);
-
-                    GetImageFromGravatar(imageFileName, email, imageSize, fallBack);
+                    return null;
                 }
                 if (cache.FileIsCached(imageFileName))
                 {
-                    onChangedImage(cache.LoadImageFromCache(imageFileName,
-                                                                 defaultBitmap));
+                    return cache.LoadImageFromCache(imageFileName, null);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                //catch IO errors
+                Trace.WriteLine(ex.Message);
+            }
+            return null;
+        }
+
+        public static void LoadCachedImage(string imageFileName, string email, Bitmap defaultBitmap, int cacheDays,
+                                             int imageSize, string imageCachePath, Action<Image> onChangedImage,
+                                             FallBackService fallBack)
+        {
+            Image image = GetImageFromCache(imageFileName, email, cacheDays, imageSize, imageCachePath, fallBack);
+
+            try
+            {
+                if (image == null)
+                {
+                    onChangedImage(defaultBitmap);
+
+                    //Lock added to make sure gravatar doesn't block this ip..
+                    lock (gravatarServiceLock)
+                    {
+                        if (GetImageFromCache(imageFileName, email, cacheDays, imageSize, imageCachePath, fallBack) == null)
+                            GetImageFromGravatar(imageFileName, email, imageSize, fallBack);
+                    }
+                }
+                image = GetImageFromCache(imageFileName, email, cacheDays, imageSize, imageCachePath, fallBack);
+                if (image != null)
+                {
+                    onChangedImage(image);
                 }
                 else
                 {

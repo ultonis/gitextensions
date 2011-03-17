@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows.Forms;
 using GitCommands;
 using ResourceManager.Translation;
+using System.Collections.Generic;
 
 namespace GitUI
 {
@@ -20,6 +21,20 @@ namespace GitUI
             Initialize();
         }
 
+        public FormCheckoutBranch(string branch, bool remote)
+        {
+            InitializeComponent();
+            Translate();
+
+            Initialize();
+
+            LocalBranch.Checked = !remote;
+            Remotebranch.Checked = remote;
+
+            Branches.Text = branch;
+        }
+
+
         private void Initialize()
         {
             Branches.DisplayMember = "Name";
@@ -32,7 +47,15 @@ namespace GitUI
             {
                 var heads = GitCommandHelpers.GetHeads(true, true);
 
-                Branches.DataSource = heads.Where(head => head.IsRemote && !head.IsTag);
+                var remoteHeads = new List<GitHead>();
+
+                foreach (var head in heads)
+                {
+                    if (head.IsRemote && !head.IsTag)
+                        remoteHeads.Add(head);
+                }
+
+                Branches.DataSource = remoteHeads;
             }
 
             Branches.Text = null;
@@ -84,7 +107,12 @@ namespace GitUI
 
         private static bool LocalBranchExists(string name)
         {
-            return GitCommandHelpers.GetHeads(false).Any(head => head.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            foreach (GitHead head in GitCommandHelpers.GetHeads(false))
+            {
+                if (head.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
         }
 
 

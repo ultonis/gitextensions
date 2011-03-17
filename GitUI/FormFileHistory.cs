@@ -6,31 +6,40 @@ using GitCommands;
 using PatchApply;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace GitUI
 {
     public partial class FormFileHistory : GitExtensionsForm
     {
+        SynchronizationContext syncContext = SynchronizationContext.Current;
+
         public FormFileHistory(string fileName, GitRevision revision)
         {
             InitializeComponent();
             FileChanges.SetInitialRevision(revision);
             Translate();
 
-            if (string.IsNullOrEmpty(fileName))
-                return;
-
-            LoadFileHistory(fileName);
+            this.FileName = fileName;
 
             Diff.ExtraDiffArgumentsChanged += DiffExtraDiffArgumentsChanged;
 
             FileChanges.SelectionChanged += FileChangesSelectionChanged;
             FileChanges.DisableContextMenu();
+
+            followFileHistoryToolStripMenuItem.Checked = Settings.FollowRenamesInFileHistory;
         }
 
         public FormFileHistory(string fileName)
             : this(fileName, null)
         {
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+
+            ThreadPool.QueueUserWorkItem(o => LoadFileHistory(FileName));
         }
 
         public string FileName { get; set; }
@@ -76,6 +85,7 @@ namespace GitUI
 
             FileName = fileName;
 
+            string filter;
             if (Settings.FollowRenamesInFileHistory)
             {
                 // git log --follow is not working as expected (see  http://kerneltrap.org/mailarchive/git/2009/1/30/4856404/thread)
@@ -114,15 +124,21 @@ namespace GitUI
                 } while (line != null);
 
                 // here we need --name-only to get the previous filenames in the revision graph
-                FileChanges.Filter = " --name-only --parents -- " + listOfFileNames;
-                FileChanges.AllowGraphWithFilter = true;
+                filter = " --name-only --parents -- " + listOfFileNames;
             }
             else
             {
                 // --parents doesn't work with --follow enabled, but needed to graph a filtered log
-                FileChanges.Filter = " --parents -- \"" + fileName + "\"";
-                FileChanges.AllowGraphWithFilter = true;
+                filter = " --parents -- \"" + fileName + "\"";
             }
+
+
+            syncContext.Post(o =>
+            {
+                FileChanges.Filter = filter;
+                FileChanges.AllowGraphWithFilter = true;
+                FileChanges.Load();
+            }, this);
         }
 
         private void DiffExtraDiffArgumentsChanged(object sender, EventArgs e)
@@ -164,7 +180,7 @@ namespace GitUI
             Text = string.Format("File History ({0})", fileName);
 
             if (tabControl1.SelectedTab == Blame)
-                blameControl1.LoadBlame(revision.Guid, fileName);
+                blameControl1.LoadBlame(revision.Guid, fileName, FileChanges);
             if (tabControl1.SelectedTab == ViewTab)
             {
                 var scrollpos = View.ScrollPos;
@@ -267,6 +283,43 @@ namespace GitUI
             var output = GitCommandHelpers.OpenWithDifftool(FileName, rev1, rev2);
             if (!string.IsNullOrEmpty(output))
                 MessageBox.Show(output);
+        }
+
+        private void saveAsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var selectedRows = FileChanges.GetRevisions();
+
+            if (selectedRows.Count > 0)
+            {
+                string orgFileName = selectedRows[0].Name;
+
+                if (string.IsNullOrEmpty(orgFileName))
+                    orgFileName = FileName;
+
+                string fileName = orgFileName.Replace(Settings.PathSeparatorWrong, Settings.PathSeparator);
+
+                SaveFileDialog fileDialog = new SaveFileDialog();
+                fileDialog.FileName = Settings.WorkingDir + fileName;
+                fileDialog.AddExtension = true;
+                fileDialog.DefaultExt = GitCommandHelpers.GetFileExtension(fileDialog.FileName);
+                fileDialog.Filter =
+                    "Current format (*." +
+                    GitCommandHelpers.GetFileExtension(fileDialog.FileName) + ")|*." +
+                    GitCommandHelpers.GetFileExtension(fileDialog.FileName) +
+                    "|All files (*.*)|*.*";
+                if (fileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    GitCommandHelpers.SaveBlobAs(fileDialog.FileName, selectedRows[0].Guid + ":\"" + orgFileName + "\"");
+                }
+            }
+        }
+
+        private void followFileHistoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Settings.FollowRenamesInFileHistory = !Settings.FollowRenamesInFileHistory;
+            followFileHistoryToolStripMenuItem.Checked = Settings.FollowRenamesInFileHistory;
+
+            ThreadPool.QueueUserWorkItem(o => LoadFileHistory(FileName));
         }
     }
 }

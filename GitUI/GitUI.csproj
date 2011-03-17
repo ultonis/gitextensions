@@ -88,6 +88,32 @@
     <Compile Include="AboutBox.Designer.cs">
       <DependentUpon>AboutBox.cs</DependentUpon>
     </Compile>
+    <Compile Include="FormGoToCommit.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FormGoToCommit.Designer.cs">
+      <DependentUpon>FormGoToCommit.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Hotkey\ControlHotkeys.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Hotkey\ControlHotkeys.Designer.cs">
+      <DependentUpon>ControlHotkeys.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Hotkey\FormHotkeys.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Hotkey\FormHotkeys.Designer.cs">
+      <DependentUpon>FormHotkeys.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Hotkey\HotkeyCommand.cs" />
+    <Compile Include="Hotkey\HotkeySettings.cs" />
+    <Compile Include="Hotkey\HotkeySettingsManager.cs" />
+    <Compile Include="Hotkey\KeysExtensions.cs" />
+    <Compile Include="Hotkey\TextboxHotkey.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Editor\FileViewer.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -615,7 +641,6 @@
     <Compile Include="PatchGrid.Designer.cs">
       <DependentUpon>PatchGrid.cs</DependentUpon>
     </Compile>
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -660,6 +685,9 @@
     <EmbeddedResource Include="Editor\FileViewer.resx">
       <DependentUpon>FileViewer.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormGoToCommit.resx">
+      <DependentUpon>FormGoToCommit.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormViewPatch.resx">
       <DependentUpon>FormViewPatch.cs</DependentUpon>
@@ -747,6 +775,14 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormRunScriptSpecify.resx">
       <DependentUpon>FormRunScriptSpecify.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Hotkey\ControlHotkeys.resx">
+      <DependentUpon>ControlHotkeys.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Hotkey\FormHotkeys.resx">
+      <DependentUpon>FormHotkeys.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="RepoHosting\CreatePullRequestForm.resx">
@@ -1068,6 +1104,11 @@
     <None Include="Resources\double_arrow_up.png" />
     <None Include="Resources\double_arrow_down.png" />
     <None Include="Icons\45.png" />
+    <None Include="Icons\Renamed.png" />
+    <None Include="Icons\52.png" />
+    <None Include="Icons\Copied.png" />
+    <None Include="Icons\SplitViewLayout.png" />
+    <None Include="Icons\cardModeLayout.png" />
     <Content Include="Resources\success1.png" />
     <None Include="Resources\witespace.ico" />
     <None Include="Resources\whitespace.bmp" />
@@ -1091,6 +1132,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Translation\Japanese.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Translation\Simplified Chinese.gif">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Translation\Simplified Chinese.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Translation\Spanish.gif">

@@ -23,7 +23,8 @@ namespace GitUI
         private readonly TranslationString issues = new TranslationString("Issues");
         private readonly TranslationString openRepository = new TranslationString("Open repository");
         private readonly TranslationString translate = new TranslationString("Translate");
-        private bool Recalculating;
+        private readonly TranslationString directoryIsNotAValidRepositoryCaption = new TranslationString("Open");
+        private readonly TranslationString directoryIsNotAValidRepository = new TranslationString("The selected item is not a valid git repository.\n\nDo you want to abort and remove it from the recent repositories list?");
         private bool initialized;
 
         public Dashboard()
@@ -32,6 +33,7 @@ namespace GitUI
             Translate();
 
             RecentRepositories.DashboardItemClick += dashboardItem_Click;
+            RecentRepositories.RepositoryRemoved += RecentRepositories_RepositoryRemoved;
             RecentRepositories.DisableContextMenu();
             RecentRepositories.DashboardCategoryChanged += dashboardCategory_DashboardCategoryChanged;
             //Repositories.RepositoryCategories.ListChanged += new ListChangedEventHandler(RepositoryCategories_ListChanged);
@@ -41,6 +43,12 @@ namespace GitUI
                 pictureBox1.Image = image;
 
             Load += Dashboard_Load;
+        }
+
+        void RecentRepositories_RepositoryRemoved(Repository repository)
+        {
+            if (repository != null)
+                Repositories.RepositoryHistory.RemoveRepository(repository);
         }
 
         private void Dashboard_Load(object sender, EventArgs e)
@@ -110,65 +118,7 @@ namespace GitUI
 
         private void dashboardCategory_DashboardCategoryChanged(object sender, EventArgs e)
         {
-            Recalculate();
-        }
-
-        //Recalculate hieght when list is changed
-
-        private void Recalculate()
-        {
-            if (Recalculating)
-                return;
-            int y = 0;
-
-            try
-            {
-                Recalculating = true;
-                //Remove deleted entries
-                for (int i = splitContainer5.Panel2.Controls.Count - 1; i >= 0; i--)
-                {
-                    var currentDashboardCategory = splitContainer5.Panel2.Controls[i] as DashboardCategory;
-
-                    if (currentDashboardCategory != null &&
-                        !Repositories.RepositoryCategories.Contains(currentDashboardCategory.RepositoryCategory))
-                    {
-                        currentDashboardCategory.DashboardCategoryChanged -= dashboardCategory_DashboardCategoryChanged;
-                        currentDashboardCategory.DashboardItemClick -= dashboardItem_Click;
-                        currentDashboardCategory.Clear();
-                        splitContainer5.Panel2.Controls.RemoveAt(i);
-                    }
-                }
-
-                foreach (RepositoryCategory entry in Repositories.RepositoryCategories)
-                {
-                    DashboardCategory dashboardCategory = null;
-                    //Try to find existing entry first
-                    for (int i = splitContainer5.Panel2.Controls.Count - 1; i >= 0; i--)
-                    {
-                        var currentDashboardCategory = splitContainer5.Panel2.Controls[i] as DashboardCategory;
-
-                        if (currentDashboardCategory == null || currentDashboardCategory.RepositoryCategory != entry)
-                            continue;
-
-                        dashboardCategory = currentDashboardCategory;
-                        dashboardCategory.Recalculate();
-                        dashboardCategory.Location = new Point(0, y);
-                        y += dashboardCategory.Height;
-                        break;
-                    }
-
-                    if (dashboardCategory == null)
-                    {
-                        y = AddDashboardEntry(y, entry);
-                    }
-                }
-
-                RecentRepositories.Recalculate();
-            }
-            finally
-            {
-                Recalculating = false;
-            }
+            Refresh();
         }
 
         public override void Refresh()
@@ -211,7 +161,21 @@ namespace GitUI
             }
 
             RecentRepositories.Clear();
-            RecentRepositories.RepositoryCategory = Repositories.RepositoryHistory;
+
+            RepositoryCategory filteredRecentRepositoryHistory = new RepositoryCategory();
+            filteredRecentRepositoryHistory.Description = Repositories.RepositoryHistory.Description;
+            filteredRecentRepositoryHistory.CategoryType = Repositories.RepositoryHistory.CategoryType;
+            
+            foreach (Repository repository in Repositories.RepositoryHistory.Repositories)
+            {
+                if (!Repositories.RepositoryCategories.Any(c => c.Repositories.Any(r => r.Path != null && r.Path.Equals(repository.Path, StringComparison.CurrentCultureIgnoreCase))))
+                {
+                    repository.RepositoryType = RepositoryType.History;
+                    filteredRecentRepositoryHistory.Repositories.Add(repository);
+                }
+            }
+
+            RecentRepositories.RepositoryCategory = filteredRecentRepositoryHistory;
 
         }
 
@@ -245,8 +209,25 @@ namespace GitUI
             else
             {
                 Settings.WorkingDir = label.Path;
-                Repositories.RepositoryHistory.AddMostRecentRepository(Settings.WorkingDir);
 
+                if (!Settings.ValidWorkingDir())
+                {
+                    DialogResult dialogResult = MessageBox.Show(directoryIsNotAValidRepository.Text, directoryIsNotAValidRepositoryCaption.Text, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                    if (dialogResult == DialogResult.Cancel)
+                    {
+                        Settings.WorkingDir = string.Empty;
+                        return;
+                    }
+                    if (dialogResult == DialogResult.Yes)
+                    {
+                        Settings.WorkingDir = string.Empty;
+                        Repositories.RepositoryHistory.RemoveRecentRepository(label.Path);
+                        Refresh();
+                        return;
+                    }
+                }
+
+                Repositories.RepositoryHistory.AddMostRecentRepository(Settings.WorkingDir);
                 OnWorkingDirChanged();
             }
         }
@@ -286,7 +267,7 @@ namespace GitUI
         private void pictureBox1_Click(object sender, EventArgs e)
         {
             new FormDashboardEditor().ShowDialog();
-            Recalculate();
+            Refresh();
         }
     }
 }

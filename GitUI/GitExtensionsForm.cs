@@ -8,6 +8,7 @@ using GitUI.Properties;
 using Microsoft.WindowsAPICodePack.Taskbar;
 using ResourceManager.Translation;
 using Settings = GitCommands.Settings;
+using System.Collections.Generic;
 
 namespace GitUI
 {
@@ -33,6 +34,41 @@ namespace GitUI
             Load += GitExtensionsFormLoad;
             FormClosed += GitExtensionsFormFormClosed;
         }
+
+        #region Hotkeys
+
+        /// <summary>Gets or sets a value that specifies if the hotkeys are used</summary>
+        protected bool HotkeysEnabled { get; set; }
+
+        /// <summary>Gets or sets the hotkeys</summary>
+        protected IEnumerable<Hotkey.HotkeyCommand> Hotkeys { get; set; }
+
+        /// <summary>Overridden: Checks if a hotkey wants to handle the key before letting the message propagate</summary>
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+          if (HotkeysEnabled && this.Hotkeys != null)
+            foreach (var hotkey in this.Hotkeys)
+            {
+              if (hotkey.KeyData == keyData)
+              {
+                return ExecuteCommand(hotkey.CommandCode);
+              }
+            }
+
+          return base.ProcessCmdKey(ref msg, keyData);
+        }
+        
+        /// <summary>
+        /// Override this method to handle form specific Hotkey commands
+        /// This base method does nothing
+        /// </summary>
+        /// <param name="command"></param>
+        protected virtual bool ExecuteCommand(int command)
+        {
+            return false;
+        }
+
+        #endregion
 
         private void SetFont()
         {
@@ -158,8 +194,6 @@ namespace GitUI
             {
                 //TODO: howto restore a corrupted config? Properties.Settings.Default.Reset() doesn't work.
             }
-
-
         }
 
         /// <summary>

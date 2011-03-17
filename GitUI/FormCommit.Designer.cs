@@ -57,6 +57,7 @@ namespace GitUI
             this.filenameToClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.fileTooltip = new System.Windows.Forms.ToolTip(this.components);
             this.gitItemStatusBindingSource = new System.Windows.Forms.BindingSource(this.components);
+            this.Cancel = new System.Windows.Forms.Button();
             this.splitMain = new System.Windows.Forms.SplitContainer();
             this.splitLeft = new System.Windows.Forms.SplitContainer();
             this.Loading = new System.Windows.Forms.PictureBox();
@@ -75,8 +76,8 @@ namespace GitUI
             this.editGitIgnoreToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteAllUntrackedFilesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripProgressBar1 = new System.Windows.Forms.ToolStripProgressBar();
+            this.LoadingStaged = new System.Windows.Forms.PictureBox();
             this.Staged = new GitUI.FileStatusList();
-            this.Cancel = new System.Windows.Forms.Button();
             this.toolbarStaged = new System.Windows.Forms.ToolStrip();
             this.toolStageAllItem = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
@@ -113,6 +114,7 @@ namespace GitUI
             this.splitLeft.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.Loading)).BeginInit();
             this.toolbarUnstaged.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LoadingStaged)).BeginInit();
             this.toolbarStaged.SuspendLayout();
             this.splitRight.Panel1.SuspendLayout();
             this.splitRight.Panel2.SuspendLayout();
@@ -249,6 +251,16 @@ namespace GitUI
             // 
             this.gitItemStatusBindingSource.DataSource = typeof(GitCommands.GitItemStatus);
             // 
+            // Cancel
+            // 
+            this.Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.Cancel.Location = new System.Drawing.Point(134, 167);
+            this.Cancel.Name = "Cancel";
+            this.Cancel.Size = new System.Drawing.Size(129, 23);
+            this.Cancel.TabIndex = 15;
+            this.Cancel.Text = "Cancel";
+            this.Cancel.UseVisualStyleBackColor = true;
+            // 
             // splitMain
             // 
             this.splitMain.BackColor = System.Drawing.SystemColors.Control;
@@ -284,6 +296,7 @@ namespace GitUI
             // 
             // splitLeft.Panel2
             // 
+            this.splitLeft.Panel2.Controls.Add(this.LoadingStaged);
             this.splitLeft.Panel2.Controls.Add(this.Staged);
             this.splitLeft.Panel2.Controls.Add(this.Cancel);
             this.splitLeft.Panel2.Controls.Add(this.toolbarStaged);
@@ -331,10 +344,12 @@ namespace GitUI
             this.toolbarUnstaged.Location = new System.Drawing.Point(0, 0);
             this.toolbarUnstaged.Name = "toolbarUnstaged";
             this.toolbarUnstaged.Padding = new System.Windows.Forms.Padding(2, 1, 2, 1);
+            this.toolbarUnstaged.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.toolbarUnstaged.Size = new System.Drawing.Size(397, 28);
             this.toolbarUnstaged.Stretch = true;
             this.toolbarUnstaged.TabIndex = 12;
             this.toolbarUnstaged.Text = "toolStrip1";
+            this.toolbarUnstaged.ItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.toolbarUnstaged_ItemClicked);
             // 
             // toolRefreshItem
             // 
@@ -437,6 +452,18 @@ namespace GitUI
             this.toolStripProgressBar1.Size = new System.Drawing.Size(150, 26);
             this.toolStripProgressBar1.Visible = false;
             // 
+            // LoadingStaged
+            // 
+            this.LoadingStaged.BackColor = System.Drawing.SystemColors.AppWorkspace;
+            this.LoadingStaged.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.LoadingStaged.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.LoadingStaged.Location = new System.Drawing.Point(0, 28);
+            this.LoadingStaged.Name = "LoadingStaged";
+            this.LoadingStaged.Size = new System.Drawing.Size(397, 328);
+            this.LoadingStaged.SizeMode = System.Windows.Forms.PictureBoxSizeMode.CenterImage;
+            this.LoadingStaged.TabIndex = 17;
+            this.LoadingStaged.TabStop = false;
+            // 
             // Staged
             // 
             this.Staged.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -449,16 +476,6 @@ namespace GitUI
             this.Staged.SelectedItem = null;
             this.Staged.Size = new System.Drawing.Size(397, 328);
             this.Staged.TabIndex = 16;
-            // 
-            // Cancel
-            // 
-            this.Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.Cancel.Location = new System.Drawing.Point(134, 167);
-            this.Cancel.Name = "Cancel";
-            this.Cancel.Size = new System.Drawing.Size(129, 23);
-            this.Cancel.TabIndex = 15;
-            this.Cancel.Text = "Cancel";
-            this.Cancel.UseVisualStyleBackColor = true;
             // 
             // toolbarStaged
             // 
@@ -475,6 +492,7 @@ namespace GitUI
             this.toolbarStaged.Location = new System.Drawing.Point(0, 0);
             this.toolbarStaged.Name = "toolbarStaged";
             this.toolbarStaged.Padding = new System.Windows.Forms.Padding(2, 1, 2, 1);
+            this.toolbarStaged.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.toolbarStaged.Size = new System.Drawing.Size(397, 28);
             this.toolbarStaged.TabIndex = 13;
             // 
@@ -604,8 +622,8 @@ namespace GitUI
             this.Message.Name = "Message";
             this.Message.Size = new System.Drawing.Size(342, 110);
             this.Message.TabIndex = 4;
+            this.Message.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Message_KeyDown);
             this.Message.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Message_KeyUp);
-            this.Message.KeyDown += new System.Windows.Forms.KeyEventHandler(Message_KeyDown);
             // 
             // toolbarCommit
             // 
@@ -618,6 +636,7 @@ namespace GitUI
             this.toolbarCommit.Location = new System.Drawing.Point(175, 0);
             this.toolbarCommit.Name = "toolbarCommit";
             this.toolbarCommit.Padding = new System.Windows.Forms.Padding(1, 1, 2, 1);
+            this.toolbarCommit.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.toolbarCommit.Size = new System.Drawing.Size(342, 28);
             this.toolbarCommit.Stretch = true;
             this.toolbarCommit.TabIndex = 5;
@@ -629,8 +648,8 @@ namespace GitUI
             this.commitMessageToolStripMenuItem.RightToLeft = System.Windows.Forms.RightToLeft.No;
             this.commitMessageToolStripMenuItem.Size = new System.Drawing.Size(116, 23);
             this.commitMessageToolStripMenuItem.Text = "Commit &message";
-            this.commitMessageToolStripMenuItem.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.CommitMessageToolStripMenuItemDropDownItemClicked);
             this.commitMessageToolStripMenuItem.DropDownOpening += new System.EventHandler(this.CommitMessageToolStripMenuItemDropDownOpening);
+            this.commitMessageToolStripMenuItem.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.CommitMessageToolStripMenuItemDropDownItemClicked);
             // 
             // toolStripMenuItem3
             // 
@@ -697,6 +716,7 @@ namespace GitUI
             this.flowCommitButtons.Controls.Add(this.Amend);
             this.flowCommitButtons.Controls.Add(this.Reset);
             this.flowCommitButtons.Dock = System.Windows.Forms.DockStyle.Left;
+            this.flowCommitButtons.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flowCommitButtons.Location = new System.Drawing.Point(0, 0);
             this.flowCommitButtons.Name = "flowCommitButtons";
             this.flowCommitButtons.Size = new System.Drawing.Size(175, 138);
@@ -760,10 +780,10 @@ namespace GitUI
             this.Name = "FormCommit";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Commit";
-            this.Load += new System.EventHandler(this.FormCommitLoad);
-            this.Shown += new System.EventHandler(this.FormCommitShown);
             this.Activated += new System.EventHandler(this.FormCommitActivated);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormCommitFormClosing);
+            this.Load += new System.EventHandler(this.FormCommitLoad);
+            this.Shown += new System.EventHandler(this.FormCommitShown);
             this.UnstagedFileContext.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gitItemStatusBindingSource)).EndInit();
             this.splitMain.Panel1.ResumeLayout(false);
@@ -775,6 +795,7 @@ namespace GitUI
             ((System.ComponentModel.ISupportInitialize)(this.Loading)).EndInit();
             this.toolbarUnstaged.ResumeLayout(false);
             this.toolbarUnstaged.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.LoadingStaged)).EndInit();
             this.toolbarStaged.ResumeLayout(false);
             this.toolbarStaged.PerformLayout();
             this.splitRight.Panel1.ResumeLayout(false);
@@ -854,5 +875,6 @@ namespace GitUI
         private ToolStripMenuItem toolAuthorLabelItem;
         private ToolStripTextBox toolAuthor;
         private ToolStripSeparator toolStripSeparator2;
+        private PictureBox LoadingStaged;
     }
 }

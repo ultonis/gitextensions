@@ -44,15 +44,17 @@ namespace GitUI
 
         public FormPush()
         {
-            _currentBranch = GitCommandHelpers.GetSelectedBranch();
             InitializeComponent();
             Translate();
 
+            _currentBranch = GitCommandHelpers.GetSelectedBranch();
+
             Remotes.DataSource = GitCommandHelpers.GetRemotes();
-            FillPushDestinationDropDown();
 
             UpdateBranchDropDown();
             UpdateRemoteBranchDropDown();
+
+            Push.Focus();
         }
 
         private void BrowseSourceClick(object sender, EventArgs e)
@@ -272,6 +274,8 @@ namespace GitUI
             BrowseSource.Enabled = true;
             Remotes.Enabled = false;
             AddRemote.Enabled = false;
+
+            FillPushDestinationDropDown();
         }
 
         private void RemotesUpdated(object sender, EventArgs e)

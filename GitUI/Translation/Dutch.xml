@@ -40,8 +40,8 @@
     </TranslationCategory>
     <TranslationCategory Name="Dashboard">
       <translationItems>
-        <TranslationItem Name="openRepository" Property="Text">
-          <Value>Open opslagplaats</Value>
+        <TranslationItem Name="cloneFork" Property="Text">
+          <Value>Kloon/fork {0} opslagplaats</Value>
         </TranslationItem>
         <TranslationItem Name="cloneRepository" Property="Text">
           <Value>Kloon opslagplaats</Value>
@@ -49,20 +49,28 @@
         <TranslationItem Name="createRepository" Property="Text">
           <Value>Maak een nieuwe opslagplaats</Value>
         </TranslationItem>
-        <TranslationItem Name="cloneFork" Property="Text">
-          <Value>Kloon/fork {0} opslagplaats</Value>
-        </TranslationItem>
         <TranslationItem Name="develop" Property="Text">
           <Value>Coderen</Value>
         </TranslationItem>
         <TranslationItem Name="donate" Property="Text">
           <Value>Doneren</Value>
         </TranslationItem>
+        <TranslationItem Name="issues" Property="Text">
+          <Value>Problemen</Value>
+        </TranslationItem>
+        <TranslationItem Name="openRepository" Property="Text">
+          <Value>Open opslagplaats</Value>
+        </TranslationItem>
         <TranslationItem Name="translate" Property="Text">
           <Value>Vertalen</Value>
         </TranslationItem>
-        <TranslationItem Name="issues" Property="Text">
-          <Value>Problemen</Value>
+        <TranslationItem Name="directoryIsNotAValidRepositoryCaption" Property="Text">
+          <Value>Open</Value>
+        </TranslationItem>
+        <TranslationItem Name="directoryIsNotAValidRepository" Property="Text">
+          <Value>Het geselecteerde item is geen geldige git directorie.
+
+Wilt u teruggaan naar het dashboard en het item verwijderen uit de 'recent geopend' lijst?</Value>
         </TranslationItem>
         <TranslationItem Name="RecentRepositories" Property="Title">
           <Value>Recente opslagplaatsen</Value>
@@ -678,6 +686,9 @@ _ReSharper*/
         <TranslationItem Name="_createPullRequestsToolStripMenuItem" Property="Text">
           <Value>Maak binnenhaal verzoek</Value>
         </TranslationItem>
+        <TranslationItem Name="goToToolStripMenuItem" Property="Text">
+          <Value>Ga naar revisie</Value>
+        </TranslationItem>
       </translationItems>
     </TranslationCategory>
     <TranslationCategory Name="FormBlame">
@@ -989,6 +1000,19 @@ Kies een directory.</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>
+    <TranslationCategory Name="FormGoToCommit">
+      <translationItems>
+        <TranslationItem Name="$this" Property="Text">
+          <Value>Ga naar revisie</Value>
+        </TranslationItem>
+        <TranslationItem Name="goButton" Property="Text">
+          <Value>Zoek</Value>
+        </TranslationItem>
+        <TranslationItem Name="label1" Property="Text">
+          <Value>Expressie:</Value>
+        </TranslationItem>
+      </translationItems>
+    </TranslationCategory>
     <TranslationCategory Name="FormEdit">
       <translationItems>
         <TranslationItem Name="$this" Property="Text">
@@ -1162,6 +1186,12 @@ wanneer deze leeg is. Verander het standaard gedrag alleen wanneer problemen opt
         <TranslationItem Name="$this" Property="Text">
           <Value>Logboek</Value>
         </TranslationItem>
+        <TranslationItem Name="tabPageCommandLog" Property="Text">
+          <Value>Commando log</Value>
+        </TranslationItem>
+        <TranslationItem Name="tabPageCommandCache" Property="Text">
+          <Value>Commando cache</Value>
+        </TranslationItem>
       </translationItems>
     </TranslationCategory>
     <TranslationCategory Name="FormPull">
@@ -1222,6 +1252,9 @@ Als u een vertakking wilt ophalen en samenvoegen, kies een vertakking.</Value>
         <TranslationItem Name="Stash" Property="Text">
           <Value>Wijzigingen wegzetten</Value>
         </TranslationItem>
+        <TranslationItem Name="Remotes" Property="Text">
+          <Value>[ All ]</Value>
+        </TranslationItem>
         <TranslationItem Name="AddRemote" Property="Text">
           <Value>Beheer externe opslagplaatsen</Value>
         </TranslationItem>
@@ -1271,11 +1304,20 @@ Als u een vertakking wilt ophalen en samenvoegen, kies een vertakking.</Value>
         <TranslationItem Name="fastForward" Property="Text">
           <Value>Behoud lineaire geschiedenis indien mogelijk (fast forward)</Value>
         </TranslationItem>
+        <TranslationItem Name="strategyHelp" Property="Text">
+          <Value>Help</Value>
+        </TranslationItem>
+        <TranslationItem Name="squash" Property="Text">
+          <Value>Voeg revisies samen tot een</Value>
+        </TranslationItem>
+        <TranslationItem Name="advanced" Property="Text">
+          <Value>Toon geavanceerde opties</Value>
+        </TranslationItem>
         <TranslationItem Name="NonDefaultMergeStrategy" Property="Text">
           <Value>Gebruik samenvoegen strategie</Value>
         </TranslationItem>
-        <TranslationItem Name="strategyHelp" Property="Text">
-          <Value>Help</Value>
+        <TranslationItem Name="noCommit" Property="Text">
+          <Value>Niet committen</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>
@@ -1295,6 +1337,12 @@ Als u een vertakking wilt ophalen en samenvoegen, kies een vertakking.</Value>
         </TranslationItem>
         <TranslationItem Name="openWithDifftoolToolStripMenuItem" Property="Text">
           <Value>Openen met difftool</Value>
+        </TranslationItem>
+        <TranslationItem Name="saveAsToolStripMenuItem" Property="Text">
+          <Value>Opslaan als</Value>
+        </TranslationItem>
+        <TranslationItem Name="followFileHistoryToolStripMenuItem" Property="Text">
+          <Value>Detecteer hernoemen van bestand</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>
@@ -1464,9 +1512,6 @@ Als dit een centrale opslagplaats is (zonder werk directory)
         <TranslationItem Name="revertCommitToolStripMenuItem" Property="Text">
           <Value>Commit ongedaan maken</Value>
         </TranslationItem>
-        <TranslationItem Name="showRevisionGraphToolStripMenuItem" Property="Text">
-          <Value>Toon revisie grafiek</Value>
-        </TranslationItem>
         <TranslationItem Name="label2" Property="Text">
           <Value>De huidige werk directorie is geen git opslagplaats</Value>
         </TranslationItem>
@@ -1482,9 +1527,6 @@ Als dit een centrale opslagplaats is (zonder werk directory)
         <TranslationItem Name="checkoutRevisionToolStripMenuItem" Property="Text">
           <Value>Revisie uitchecken</Value>
         </TranslationItem>
-        <TranslationItem Name="orderRevisionsByDateToolStripMenuItem" Property="Text">
-          <Value>Sorteer revisies op datum</Value>
-        </TranslationItem>
         <TranslationItem Name="checkoutBranchToolStripMenuItem" Property="Text">
           <Value>Vertakking uitchecken</Value>
         </TranslationItem>
@@ -1493,12 +1535,6 @@ Als dit een centrale opslagplaats is (zonder werk directory)
         </TranslationItem>
         <TranslationItem Name="cherryPickCommitToolStripMenuItem" Property="Text">
           <Value>Commit opnieuw toepassen</Value>
-        </TranslationItem>
-        <TranslationItem Name="showAuthorDateToolStripMenuItem" Property="Text">
-          <Value>Toon auteur datum</Value>
-        </TranslationItem>
-        <TranslationItem Name="showRelativeDateToolStripMenuItem" Property="Text">
-          <Value>Toon relatieve datum</Value>
         </TranslationItem>
         <TranslationItem Name="rebaseOnToolStripMenuItem" Property="Text">
           <Value>Rebase op</Value>
@@ -1511,9 +1547,6 @@ Als dit een centrale opslagplaats is (zonder werk directory)
         </TranslationItem>
         <TranslationItem Name="showFilteredBranchesToolStripMenuItem" Property="Text">
           <Value>Toon alleen gefilterde vertakkingen</Value>
-        </TranslationItem>
-        <TranslationItem Name="drawNonrelativesGrayToolStripMenuItem" Property="Text">
-          <Value>Teken niet gerelateerde vertakkingen grijs</Value>
         </TranslationItem>
         <TranslationItem Name="copyToClipboardToolStripMenuItem" Property="Text">
           <Value>Kopiëren naar het klembord</Value>
@@ -1544,6 +1577,27 @@ Als dit een centrale opslagplaats is (zonder werk directory)
         </TranslationItem>
         <TranslationItem Name="runScriptToolStripMenuItem" Property="Text">
           <Value>Draai script</Value>
+        </TranslationItem>
+        <TranslationItem Name="InitRepository" Property="Text">
+          <Value>Nieuwe repository maken</Value>
+        </TranslationItem>
+        <TranslationItem Name="showRevisionGraphToolStripMenuItem" Property="Text">
+          <Value>Toon revisie grafiek</Value>
+        </TranslationItem>
+        <TranslationItem Name="drawNonrelativesGrayToolStripMenuItem" Property="Text">
+          <Value>Teken niet gerelateerde vertakkingen grijs</Value>
+        </TranslationItem>
+        <TranslationItem Name="orderRevisionsByDateToolStripMenuItem" Property="Text">
+          <Value>Sorteer revisies op datum</Value>
+        </TranslationItem>
+        <TranslationItem Name="showAuthorDateToolStripMenuItem" Property="Text">
+          <Value>Toon auteur datum</Value>
+        </TranslationItem>
+        <TranslationItem Name="showRelativeDateToolStripMenuItem" Property="Text">
+          <Value>Toon relatieve datum</Value>
+        </TranslationItem>
+        <TranslationItem Name="showGitNotesToolStripMenuItem" Property="Text">
+          <Value>Toon git notities</Value>
         </TranslationItem>
         <TranslationItem Name="_authorCaption" Property="Text">
           <Value>Auteur</Value>
@@ -2075,6 +2129,9 @@ wanneer deze leeg is. Verander het standaard gedrag alleen wanneer problemen opt
         <TranslationItem Name="GitFound_Fix" Property="Text">
           <Value>Repareren</Value>
         </TranslationItem>
+        <TranslationItem Name="tabPageHotkeys" Property="Text">
+          <Value>Sneltoetsen</Value>
+        </TranslationItem>
       </translationItems>
     </TranslationCategory>
     <TranslationCategory Name="FormModifiedDeletedCreated">
@@ -2245,6 +2302,13 @@ de git help documentatie</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>
+    <TranslationCategory Name="FormHotkeys">
+      <translationItems>
+        <TranslationItem Name="$this" Property="Text">
+          <Value>Sneltoetsen</Value>
+        </TranslationItem>
+      </translationItems>
+    </TranslationCategory>
     <TranslationCategory Name="FormTagSmall">
       <translationItems>
         <TranslationItem Name="$this" Property="Text">
@@ -2395,6 +2459,34 @@ Bij het verwijderen van een vertakking kunnen commits verloren gaan!</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>
+    <TranslationCategory Name="EditNetSpell">
+      <translationItems>
+        <TranslationItem Name="EmptyLabel" Property="Text">
+          <Value>Bericht invoeren</Value>
+        </TranslationItem>
+        <TranslationItem Name="translateEntireText" Property="Text">
+          <Value>Vertaal volledige tekst naar {0}</Value>
+        </TranslationItem>
+        <TranslationItem Name="translateCurrentWord" Property="Text">
+          <Value>Vertaal '{0}' naar {1}</Value>
+        </TranslationItem>
+        <TranslationItem Name="addToDictionaryText" Property="Text">
+          <Value>Toevoegen aan woordenboek</Value>
+        </TranslationItem>
+        <TranslationItem Name="ignoreWordText" Property="Text">
+          <Value>Negeer woord</Value>
+        </TranslationItem>
+        <TranslationItem Name="removeWordText" Property="Text">
+          <Value>Verwijder woord</Value>
+        </TranslationItem>
+        <TranslationItem Name="dictionaryText" Property="Text">
+          <Value>Woordenboek</Value>
+        </TranslationItem>
+        <TranslationItem Name="markIllFormedLinesText" Property="Text">
+          <Value>Markeer slecht geformateerde regels</Value>
+        </TranslationItem>
+      </translationItems>
+    </TranslationCategory>
     <TranslationCategory Name="FileViewer">
       <translationItems>
         <TranslationItem Name="findToolStripMenuItem" Property="Text">
@@ -2444,34 +2536,6 @@ Bij het verwijderen van een vertakking kunnen commits verloren gaan!</Value>
         </TranslationItem>
         <TranslationItem Name="ignoreWhiteSpaces" Property="ToolTipText">
           <Value>Negeer witruimten</Value>
-        </TranslationItem>
-      </translationItems>
-    </TranslationCategory>
-    <TranslationCategory Name="EditNetSpell">
-      <translationItems>
-        <TranslationItem Name="EmptyLabel" Property="Text">
-          <Value>Bericht invoeren</Value>
-        </TranslationItem>
-        <TranslationItem Name="translateEntireText" Property="Text">
-          <Value>Vertaal volledige tekst naar {0}</Value>
-        </TranslationItem>
-        <TranslationItem Name="translateCurrentWord" Property="Text">
-          <Value>Vertaal '{0}' naar {1}</Value>
-        </TranslationItem>
-        <TranslationItem Name="addToDictionaryText" Property="Text">
-          <Value>Toevoegen aan woordenboek</Value>
-        </TranslationItem>
-        <TranslationItem Name="ignoreWordText" Property="Text">
-          <Value>Negeer woord</Value>
-        </TranslationItem>
-        <TranslationItem Name="removeWordText" Property="Text">
-          <Value>Verwijder woord</Value>
-        </TranslationItem>
-        <TranslationItem Name="dictionaryText" Property="Text">
-          <Value>Woordenboek</Value>
-        </TranslationItem>
-        <TranslationItem Name="markIllFormedLinesText" Property="Text">
-          <Value>Markeer slecht geformateerde regels</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>
@@ -2976,9 +3040,6 @@ Weet u zeker dat u wilt doorgaan?</Value>
         <TranslationItem Name="_resetStageChunkOfFileCaption" Property="Text">
           <Value>Zet deel van bestand terug</Value>
         </TranslationItem>
-        <TranslationItem Name="_stageChunkOfFileCaption" Property="Text">
-          <Value>Zet deel van bestand klaar</Value>
-        </TranslationItem>
         <TranslationItem Name="_stageDetails" Property="Text">
           <Value>Details</Value>
         </TranslationItem>
@@ -3002,9 +3063,6 @@ Weet u zeker dat u wilt doorgaan?</Value>
         </TranslationItem>
         <TranslationItem Name="_StageSelectedLinesToolStripMenuItem" Property="Text">
           <Value>Geselecteerde regel(s) klaarzetten</Value>
-        </TranslationItem>
-        <TranslationItem Name="_ResetSelectedLinesToolStripMenuItem" Property="Text">
-          <Value>Geselecteerde wijzigingen terugzetten</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>
@@ -3055,9 +3113,6 @@ Is het samenvoeg conflict opgelost?</Value>
         <TranslationItem Name="askMergeConflictSolvedCaption" Property="Text">
           <Value>Conflict opgelost?</Value>
         </TranslationItem>
-        <TranslationItem Name="modifiedButton" Property="Text">
-          <Value>Gewijzigd</Value>
-        </TranslationItem>
         <TranslationItem Name="noMergeTool" Property="Text">
           <Value>Er is geen mergetool geconfigureerd. Ga eerst naar settings en stel een mergetool in.</Value>
         </TranslationItem>
@@ -3073,6 +3128,10 @@ Terugvallen op 2-weg samenvoeging?</Value>
         </TranslationItem>
         <TranslationItem Name="theirs" Property="Text">
           <Value>hun</Value>
+        </TranslationItem>
+        <TranslationItem Name="fileBinairyChooseLocalBaseRemote" Property="Text">
+          <Value>Bestand ({0}) lijkt een binair bestand te zijn.
+Kies of u het lokale({1}), het externe({2}) of het basis bestand wilt houden.</Value>
         </TranslationItem>
         <TranslationItem Name="fileChangeLocallyAndRemotely" Property="Text">
           <Value>Het bestand is zowel lokaal({0}) als extern({1}) gewijzigd. Voeg de wijzigingen samen.</Value>
@@ -3277,6 +3336,9 @@ stash
         <TranslationItem Name="showContainedInBranchesRemoteIfNoLocalToolStripMenuItem" Property="Text">
           <Value>Toon externe vertakkingen indien deze commit in geen lokale vertakking voorkomt</Value>
         </TranslationItem>
+        <TranslationItem Name="addNoteToolStripMenuItem" Property="Text">
+          <Value>Voeg notitie toe</Value>
+        </TranslationItem>
         <TranslationItem Name="containedInBranches" Property="Text">
           <Value>Komt voor in vertakkingen:</Value>
         </TranslationItem>
@@ -3361,6 +3423,12 @@ welke deze externe vertakking volgt?</Value>
         <TranslationItem Name="$this" Property="Text">
           <Value>Stash</Value>
         </TranslationItem>
+        <TranslationItem Name="currentWorkingDirChanges" Property="Text">
+          <Value>Huidige wijzigingen</Value>
+        </TranslationItem>
+        <TranslationItem Name="noStashes" Property="Text">
+          <Value>Er zijn geen weggezette wijzigingen</Value>
+        </TranslationItem>
         <TranslationItem Name="Clear" Property="Text">
           <Value>Verwijder geselecteerde stash</Value>
         </TranslationItem>
@@ -3370,17 +3438,8 @@ welke deze externe vertakking volgt?</Value>
         <TranslationItem Name="Apply" Property="Text">
           <Value>Zet geselecteerde stash terug op de werk directorie</Value>
         </TranslationItem>
-        <TranslationItem Name="label1" Property="Text">
-          <Value>Gevolgde wijzigingen in de werk directorie</Value>
-        </TranslationItem>
-        <TranslationItem Name="label2" Property="Text">
-          <Value>Stash:</Value>
-        </TranslationItem>
-        <TranslationItem Name="label3" Property="Text">
-          <Value>Bericht:</Value>
-        </TranslationItem>
-        <TranslationItem Name="RefreshButton" Property="Text">
-          <Value>Verversen</Value>
+        <TranslationItem Name="toolStripLabel1" Property="Text">
+          <Value>Toon:</Value>
         </TranslationItem>
       </translationItems>
     </TranslationCategory>

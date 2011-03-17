@@ -33,6 +33,8 @@ namespace GitUI
 
         private void FormDiffLoad(object sender, EventArgs e)
         {
+            RevisionGrid.Load();
+
             RestorePosition("diff");
         }
 
@@ -59,6 +61,7 @@ namespace GitUI
                             revisions[0].Guid,
                             revisions[1].Guid,
                             DiffFiles.SelectedItem.Name,
+                            DiffFiles.SelectedItem.OldName,
                             diffViewer.GetExtraDiffArguments());
             }
             else
@@ -70,6 +73,7 @@ namespace GitUI
                             revision.Guid,
                             revision.ParentGuids[0],
                             DiffFiles.SelectedItem.Name,
+                            DiffFiles.SelectedItem.OldName,
                             diffViewer.GetExtraDiffArguments());
             }
 

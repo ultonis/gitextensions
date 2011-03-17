@@ -44,10 +44,12 @@ namespace GitUI
 
         #endregion
 
-        private const int NODE_DIMENSION = 8;
-        private const int LANE_WIDTH = 13;
-        private const int LANE_LINE_WIDTH = 2;
+        private int NODE_DIMENSION = 8;
+        private int LANE_WIDTH = 13;
+        private int LANE_LINE_WIDTH = 2;
         private const int MAX_LANES = 30;
+        private Brush selectionBrush;
+
         private readonly AutoResetEvent backgroundEvent = new AutoResetEvent(false);
         private readonly Graph graphData;
         private readonly Dictionary<Junction, int> junctionColors = new Dictionary<Junction, int>();
@@ -85,6 +87,17 @@ namespace GitUI
         private int visibleBottom;
         private int visibleTop;
 
+        public void SetDimensions(int node_dimension, int lane_width, int lane_line_width, int row_height, Brush selectionBrush)
+        {
+            RowTemplate.Height = row_height;
+            NODE_DIMENSION = node_dimension;
+            LANE_WIDTH = lane_width;
+            LANE_LINE_WIDTH = lane_line_width;
+            this.selectionBrush = selectionBrush;
+
+            dataGrid_Resize(null, null);
+        }
+
         public DvcsGraph()
         {
             syncContext = SynchronizationContext.Current;
@@ -117,6 +130,12 @@ namespace GitUI
 
             VirtualMode = true;
             Clear();
+        }
+
+        public void ShowAuthor(bool show)
+        {
+            this.Columns[2].Visible = show;
+            this.Columns[3].Visible = show;
         }
 
         public FilterType FilterMode
@@ -423,6 +442,12 @@ namespace GitUI
 
         private void dataGrid_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
+            if (Rows[e.RowIndex].Height != RowTemplate.Height)
+            {
+                Rows[e.RowIndex].Height = RowTemplate.Height;
+                dataGrid_Scroll(null, null);
+            }
+
             lock (graphData)
             {
                 Graph.LaneRow row = graphData[e.RowIndex];
@@ -432,8 +457,7 @@ namespace GitUI
                     {
                         if ((e.State & DataGridViewElementStates.Selected) == DataGridViewElementStates.Selected)
                             e.Graphics.FillRectangle(
-                                new LinearGradientBrush(e.CellBounds, RowTemplate.DefaultCellStyle.SelectionBackColor,
-                                                        Color.LightBlue, 90, false), e.CellBounds);
+                                selectionBrush, e.CellBounds);
                         else
                             e.Graphics.FillRectangle(new SolidBrush(Color.White), e.CellBounds);
 
@@ -538,7 +562,7 @@ namespace GitUI
                     //Currently we are doing some important work; we are recieving
                     //rows that the user is viewing
                     SetBackgroundThreadToNormalPriority();
-                    if (Loading != null)
+                    if (Loading != null && graphData.Count > RowCount)// && graphData.Count != RowCount)
                     {
                         Loading(true);
                     }
@@ -560,7 +584,7 @@ namespace GitUI
                     visibleBottom = graphData.Count;
                 }
 
-                int targetBottom = visibleBottom + Settings.MaxCommits;
+                int targetBottom = visibleBottom + 2000;
                 targetBottom = Math.Min(targetBottom, graphData.Count);
                 if (backgroundScrollTo < targetBottom)
                 {
@@ -651,7 +675,8 @@ namespace GitUI
 
                         laneCount = Math.Min(Math.Max(laneCount, width), MAX_LANES);
                     }
-                    dataGridColumnGraph.Width = LANE_WIDTH * laneCount;
+                    if (dataGridColumnGraph.Width != LANE_WIDTH * laneCount && LANE_WIDTH * laneCount > dataGridColumnGraph.MinimumWidth)
+                        dataGridColumnGraph.Width = LANE_WIDTH * laneCount;
                 }
             }
         }
@@ -660,7 +685,11 @@ namespace GitUI
 
         private List<Color> getJunctionColors(IEnumerable<Junction> aJunction)
         {
-            List<Color> colors = aJunction.Select(getJunctionColor).ToList();
+            List<Color> colors = new List<Color>();
+            foreach (Junction j in aJunction)
+            {
+                colors.Add(getJunctionColor(j));
+            }
 
             if (colors.Count == 0)
             {
@@ -838,6 +867,7 @@ namespace GitUI
                     return CreateRectangle(aNeededRow, width);
                 }
 
+
                 for (int rowIndex = start; rowIndex < end; rowIndex++)
                 {
                     Graph.LaneRow row = graphData[rowIndex];
@@ -924,80 +954,87 @@ namespace GitUI
             wa.Clip = newClip;
             wa.Clear(Color.Transparent);
 
-            for (int lane = 0; lane < row.Count; lane++)
-            {
-                int mid = wa.RenderingOrigin.X + (int)((lane + 0.5) * LANE_WIDTH);
-
-                for (int item = 0; item < row.LaneInfoCount(lane); item++)
+            for (int r = 0; r < 2; r++)
+                for (int lane = 0; lane < row.Count; lane++)
                 {
-                    Graph.LaneInfo laneInfo = row[lane, item];
+                    int mid = wa.RenderingOrigin.X + (int)((lane + 0.5) * LANE_WIDTH);
 
-                    List<Color> curColors = getJunctionColors(laneInfo.Junctions);
-
-                    // Create the brush for drawing the line
-                    Brush brushLineColor;
-                    bool drawBorder = Settings.BranchBorders; //hide border for "non-relatives"
-                    if (curColors.Count == 1 || !Settings.StripedBranchChange)
+                    for (int item = 0; item < row.LaneInfoCount(lane); item++)
                     {
-                        if (curColors[0] != nonRelativeColor)
+                        Graph.LaneInfo laneInfo = row[lane, item];
+                        
+                        //Draw all non-relative items first, them draw
+                        //all relative items on top
+                        if (laneInfo.Junctions.FirstOrDefault() != null)
+                            if (laneInfo.Junctions.First().IsRelative == (r == 0))
+                                continue;
+
+                        List<Color> curColors = getJunctionColors(laneInfo.Junctions);
+
+                        // Create the brush for drawing the line
+                        Brush brushLineColor;
+                        bool drawBorder = Settings.BranchBorders; //hide border for "non-relatives"
+                        if (curColors.Count == 1 || !Settings.StripedBranchChange)
                         {
-                            brushLineColor = new SolidBrush(curColors[0]);
-                        }
-                        else if (curColors.Count > 1 && curColors[1] != nonRelativeColor)
-                        {
-                            brushLineColor = new SolidBrush(curColors[1]);
+                            if (curColors[0] != nonRelativeColor)
+                            {
+                                brushLineColor = new SolidBrush(curColors[0]);
+                            }
+                            else if (curColors.Count > 1 && curColors[1] != nonRelativeColor)
+                            {
+                                brushLineColor = new SolidBrush(curColors[1]);
+                            }
+                            else
+                            {
+                                drawBorder = false;
+                                brushLineColor = new SolidBrush(nonRelativeColor);
+                            }
                         }
                         else
                         {
-                            drawBorder = false;
-                            brushLineColor = new SolidBrush(nonRelativeColor);
-                        }
-                    }
-                    else
-                    {
-                        brushLineColor = new HatchBrush(HatchStyle.DarkDownwardDiagonal, curColors[0], curColors[1]);
-                        if (curColors[0] == nonRelativeColor && curColors[1] == nonRelativeColor) drawBorder = false;
-                    }
-
-                    for (int i = drawBorder ? 0 : 2; i < 3; i++)
-                    {
-                        Pen penLine;
-                        if (i == 0)
-                        {
-                            penLine = new Pen(new SolidBrush(Color.White), LANE_LINE_WIDTH + 2);
-                        }
-                        else if (i == 1)
-                        {
-                            penLine = new Pen(new SolidBrush(Color.Black), LANE_LINE_WIDTH + 1);
-                        }
-                        else
-                        {
-                            penLine = new Pen(brushLineColor, LANE_LINE_WIDTH);
+                            brushLineColor = new HatchBrush(HatchStyle.DarkDownwardDiagonal, curColors[0], curColors[1]);
+                            if (curColors[0] == nonRelativeColor && curColors[1] == nonRelativeColor) drawBorder = false;
                         }
 
-                        if (laneInfo.ConnectLane == lane)
+                        for (int i = drawBorder ? 0 : 2; i < 3; i++)
                         {
-                            wa.DrawLine
-                                (
-                                    penLine,
-                                    new Point(mid, top - 1),
-                                    new Point(mid, top + rowHeight + 2)
-                                );
-                        }
-                        else
-                        {
-                            wa.DrawBezier
-                                (
-                                    penLine,
-                                    new Point(mid, top - 1),
-                                    new Point(mid, top + rowHeight + 2),
-                                    new Point(mid + (laneInfo.ConnectLane - lane) * LANE_WIDTH, top - 1),
-                                    new Point(mid + (laneInfo.ConnectLane - lane) * LANE_WIDTH, top + rowHeight + 2)
-                                );
+                            Pen penLine;
+                            if (i == 0)
+                            {
+                                penLine = new Pen(new SolidBrush(Color.White), LANE_LINE_WIDTH + 2);
+                            }
+                            else if (i == 1)
+                            {
+                                penLine = new Pen(new SolidBrush(Color.Black), LANE_LINE_WIDTH + 1);
+                            }
+                            else
+                            {
+                                penLine = new Pen(brushLineColor, LANE_LINE_WIDTH);
+                            }
+
+                            if (laneInfo.ConnectLane == lane)
+                            {
+                                wa.DrawLine
+                                    (
+                                        penLine,
+                                        new Point(mid, top - 1),
+                                        new Point(mid, top + rowHeight + 2)
+                                    );
+                            }
+                            else
+                            {
+                                wa.DrawBezier
+                                    (
+                                        penLine,
+                                        new Point(mid, top - 1),
+                                        new Point(mid, top + rowHeight + 2),
+                                        new Point(mid + (laneInfo.ConnectLane - lane) * LANE_WIDTH, top - 1),
+                                        new Point(mid + (laneInfo.ConnectLane - lane) * LANE_WIDTH, top + rowHeight + 2)
+                                    );
+                            }
                         }
                     }
                 }
-            }
 
             // Reset the clip region
             wa.Clip = oldClip;
@@ -1071,6 +1108,7 @@ namespace GitUI
             // Keep an extra page in the cache
             cacheCountMax = Height * 2 / rowHeight + 1;
             clearDrawCache();
+            dataGrid_Scroll(null, null);
         }
 
         // end of class Junction
@@ -1400,6 +1438,7 @@ namespace GitUI
                 }
 
                 Visit visit = null;
+                Visit localVisit = visit;
                 visit = (Node n) =>
                     {
                         if (!P.Contains(n))
@@ -1407,7 +1446,7 @@ namespace GitUI
                             P.Enqueue(n);
                             foreach (Junction e in n.Ancestors)
                             {
-                                visit(e.Parent);
+                                if (localVisit != null) localVisit(e.Parent);
                             }
                             L.Enqueue(n);
                             return true;
