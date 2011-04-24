@@ -30,12 +30,9 @@ namespace GitUI
         {
             Revision = revision;
             DiffFiles.GitItemStatuses = null;
-
-            if (revision.ParentGuids.Length > 0)
-                DiffFiles.GitItemStatuses = GitCommandHelpers.GetDiffFiles(revision.Guid, revision.ParentGuids[0]);
+            DiffFiles.GitItemStatuses = GitCommandHelpers.GetDiffFiles(revision.Guid, revision.Guid + "^");
 
             commitInfo.SetRevision(revision.Guid);
-
         }
 
         public void SetRevision(string revision)
@@ -56,7 +53,7 @@ namespace GitUI
 
             if (DiffFiles.SelectedItem != null)
             {
-                Patch selectedPatch = GitCommandHelpers.GetSingleDiff(Revision.Guid, Revision.ParentGuids[0], DiffFiles.SelectedItem.Name, DiffFiles.SelectedItem.OldName, DiffText.GetExtraDiffArguments());
+                Patch selectedPatch = GitCommandHelpers.GetSingleDiff(Revision.Guid, Revision.Guid + "^", DiffFiles.SelectedItem.Name, DiffFiles.SelectedItem.OldName, DiffText.GetExtraDiffArguments());
                 DiffText.ViewPatch(selectedPatch != null ? selectedPatch.Text : "");
             }
             Cursor.Current = Cursors.Default;

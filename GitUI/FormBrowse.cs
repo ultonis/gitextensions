@@ -574,6 +574,7 @@ namespace GitUI
             openWithToolStripMenuItem.Enabled = enableItems;
             copyFilenameToClipboardToolStripMenuItem.Enabled = enableItems;
             fileHistoryToolStripMenuItem.Enabled = enableItems;
+            editCheckedOutFileToolStripMenuItem.Enabled = enableItems;
         }
 
         public void OpenOnClick(object sender, EventArgs e)
@@ -1825,6 +1826,20 @@ namespace GitUI
                 splitContainer3.SplitterDistance = (splitContainer3.Height / 5) * 2;
             else
                 splitContainer3.SplitterDistance = splitContainer3.Height;
+        }
+
+        private void editCheckedOutFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var item = GitTree.SelectedNode.Tag;
+
+            if (item is GitItem)
+                if (((GitItem)item).ItemType == "blob")
+                {
+                    string fileName = ((GitItem)item).FileName;
+                    fileName = Settings.WorkingDir + fileName;
+
+                    new FormEditor(fileName).ShowDialog();
+                }
         }
     }
 }

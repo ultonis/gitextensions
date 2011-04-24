@@ -11,6 +11,7 @@ using GitUI.Tag;
 using ResourceManager.Translation;
 using System.Text.RegularExpressions;
 using GitUI.Hotkey;
+using GitUI.Script;
 
 namespace GitUI
 {
@@ -662,6 +663,8 @@ namespace GitUI
                 Revisions.Enabled = false;
                 Loading.Visible = true;
                 Loading.BringToFront();
+                _isLoading = true;
+                base.Refresh();
 
                 IndexWatcher.Reset();
 
@@ -1584,19 +1587,27 @@ namespace GitUI
 
         private void AddOwnScripts()
         {
-            string[][] scripts = Settings.GetScripts();
-            foreach (string[] parameters in scripts)
+            IList<ScriptInfo> scripts = ScriptManager.GetScripts();
+            int addedScripts = 0;
+            if (scripts != null)
             {
-                ToolStripItem item = new ToolStripMenuItem(parameters[0]);
-                item.Name = item.Text + "_ownScript";
-                item.Click += runScript;
-                if (parameters[3].Equals("yes"))
-                    CreateTag.Items.Add(item);
-                else
-                    runScriptToolStripMenuItem.DropDown.Items.Add(item);
+                foreach (ScriptInfo scriptInfo in scripts)
+                {
+                    if (scriptInfo.Enabled)
+                    {
+                        addedScripts++;
+                        ToolStripItem item = new ToolStripMenuItem(scriptInfo.Name);
+                        item.Name = item.Text + "_ownScript";
+                        item.Click += runScript;
+                        if (scriptInfo.AddToRevisionGridContextMenu)
+                            CreateTag.Items.Add(item);
+                        else
+                            runScriptToolStripMenuItem.DropDown.Items.Add(item);
+                    }
+                }
+                toolStripSeparator7.Visible = addedScripts > 1;
+                runScriptToolStripMenuItem.Visible = runScriptToolStripMenuItem.DropDown.Items.Count > 0;
             }
-            toolStripSeparator7.Visible = scripts.Length > 1;
-            runScriptToolStripMenuItem.Visible = runScriptToolStripMenuItem.DropDown.Items.Count > 0;
         }
 
         private void RemoveOwnScripts()
@@ -1619,7 +1630,7 @@ namespace GitUI
                 new FormSettings().LoadSettings();
                 settingsLoaded = true;
             }
-            new RunScript(sender.ToString(), this);
+            ScriptRunner.RunScript(sender.ToString(), this);
             RefreshRevisions();
         }
 
@@ -1774,7 +1785,9 @@ namespace GitUI
             ToggleShowRelativeDate,
             ToggleDrawNonRelativesGray,
             ToggleShowGitNotes,
-            ToggleRevisionCardLayout
+            ToggleRevisionCardLayout,
+            ShowAllBranches,
+            ShowCurrentBranchOnly
         }
 
         protected override bool ExecuteCommand(int cmd)
@@ -1791,6 +1804,8 @@ namespace GitUI
                 case Commands.ToggleDrawNonRelativesGray: drawNonrelativesGrayToolStripMenuItem_Click(null, null); break;
                 case Commands.ToggleShowGitNotes: ShowGitNotesToolStripMenuItem_Click(null, null); break;
                 case Commands.ToggleRevisionCardLayout: ToggleRevisionCardLayout(); break;
+                case Commands.ShowAllBranches: ShowAllBranchesToolStripMenuItemClick(null, null); break;
+                case Commands.ShowCurrentBranchOnly: ShowCurrentBranchOnlyToolStripMenuItemClick(null, null); break;
             }
 
             return true;

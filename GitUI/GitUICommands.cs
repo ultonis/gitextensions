@@ -315,6 +315,28 @@ namespace GitUI
             return true;
         }
 
+        public bool StartCommitDialog(bool showWhenNoChanges)
+        {
+            if (!RequiresValidWorkingDir())
+                return false;
+
+            if (!InvokeEvent(PreCommit))
+                return true;
+
+            var form = new FormCommit();
+            if (showWhenNoChanges)
+                form.ShowDialogWhenChanges();
+            else
+                form.ShowDialog();
+
+            InvokeEvent(PostCommit);
+
+            if (!form.NeedRefresh)
+                return false;
+
+            return true;
+        }
+
 
         public bool StartInitializeDialog()
         {
@@ -363,6 +385,25 @@ namespace GitUI
             return true;
         }
 
+        public bool StartPullDialog(bool pullOnShow)
+        {
+            if (!RequiresValidWorkingDir())
+                return false;
+
+            if (!InvokeEvent(PrePull))
+                return true;
+
+            FormPull formPull = new FormPull();
+            if (pullOnShow)
+                formPull.PullAndShowDialogWhenFailed();
+            else
+                formPull.ShowDialog();
+
+            InvokeEvent(PostPull);
+
+            return true;
+        }
+                
         public bool StartViewPatchDialog()
         {
             if (!InvokeEvent(PreViewPatch))
@@ -701,8 +742,11 @@ namespace GitUI
             if (!InvokeEvent(PrePush))
                 return true;
 
-            var form = new FormPush { PushOnShow = pushOnShow };
-            form.ShowDialog();
+            var form = new FormPush();
+            if (pushOnShow)
+                form.PushAndShowDialogWhenFailed();
+            else 
+                form.ShowDialog();
 
             InvokeEvent(PostPush);
 

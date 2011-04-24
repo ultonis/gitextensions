@@ -7,14 +7,15 @@ using System.Windows.Forms;
 using GitCommands.Logging;
 using GitCommands.Repository;
 using System.Threading;
+using System.Reflection;
 
 namespace GitCommands
 {
     public static class Settings
     {
         //Constants
-        public static readonly string GitExtensionsVersionString = "2.17";
-        public static readonly int GitExtensionsVersionInt = 217;
+        public static readonly string GitExtensionsVersionString = "2.20";
+        public static readonly int GitExtensionsVersionInt = 220;
 
         //semi-constants
         public static char PathSeparator = '\\';
@@ -539,7 +540,7 @@ namespace GitCommands
             get
             {
                 if (_orderRevisionByDate == null)
-                    SafeSetBool("orderrevisionbydate", false, x => _orderRevisionByDate = x);
+                    SafeSetBool("orderrevisionbydate", true, x => _orderRevisionByDate = x);
                 return _orderRevisionByDate.Value;
             }
             set
@@ -1196,6 +1197,26 @@ namespace GitCommands
             }
         }
 
+        private static bool? _showCurrentBranchInVisualStudio;
+        public static bool ShowCurrentBranchInVisualStudio
+        {
+            get
+            {
+                if (_showCurrentBranchInVisualStudio == null)
+                    //This setting MUST be set to false by default, otherwise it will not work in Visual Studio without
+                    //other changes in the Visual Studio plugin itself.
+                    SafeSetBool("showcurrentbranchinvisualstudio", false, x => _showCurrentBranchInVisualStudio = x);
+                return _showCurrentBranchInVisualStudio.Value;
+            }
+            set
+            {
+                if (_showCurrentBranchInVisualStudio == value)
+                    return;
+                _showCurrentBranchInVisualStudio = value;
+                Application.UserAppDataRegistry.SetValue("showcurrentbranchinvisualstudio", _showCurrentBranchInVisualStudio);
+            }
+        }
+
         private static string _lastFormatPatchDir;
         public static string LastFormatPatchDir
         {
@@ -1371,8 +1392,8 @@ namespace GitCommands
             else
                 actionToPerformIfValueExists(value.ToString());
         }
-        private static string _ownScripts;
-        private static string ownScripts
+        public static string _ownScripts;
+        public static string ownScripts
         {
             get
             {
@@ -1387,42 +1408,6 @@ namespace GitCommands
                 _ownScripts = value;
                 Application.UserAppDataRegistry.SetValue("ownScripts", _ownScripts);
             }
-        }
-
-        private const string PARAM_SEPARATOR = "<_PARAM_SEPARATOR_>";
-        private const string SCRIPT_SEPARATOR = "<_SCRIPT_SEPARATOR_>";
-
-        public static void SaveScripts(string[][] scripts)
-        {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < scripts.Length; i++)
-            {
-                for (int j = 0; j < scripts[i].Length; j++)
-                    sb.Append(scripts[i][j] + PARAM_SEPARATOR);
-                sb.Append(SCRIPT_SEPARATOR);
-            }
-            ownScripts = sb.ToString();
-        }
-
-        public static string[][] GetScripts()
-        {
-            string[] scripts = Settings.ownScripts.Split(new string[] { Settings.SCRIPT_SEPARATOR }, StringSplitOptions.RemoveEmptyEntries);
-            string[][] scripts_params = new string[scripts.Length][];
-            for (int i = 0; i < scripts.Length; i++)
-            {
-                string[] parameters = scripts[i].Split(new string[] { Settings.PARAM_SEPARATOR }, StringSplitOptions.None);
-                scripts_params[i] = parameters;
-            }
-            return scripts_params;
-        }
-
-        public static string[] GetScript(string key)
-        {
-            string[][] scripts = GetScripts();
-            foreach (string[] parameters in scripts)
-                if (parameters[0].Equals(key))
-                    return parameters;
-            return null;
         }
 
         private static bool? _pushAllTags;
@@ -1442,6 +1427,18 @@ namespace GitCommands
                     Application.UserAppDataRegistry.SetValue("pushalltags", _pushAllTags);
                 }
             }
+        }
+
+        public static string GetGitExtensionsFullPath()
+        {
+            return GetGitExtensionsDirectory() + "\\GitExtensions.exe";
+        }
+
+        public static string GetGitExtensionsDirectory()
+        {
+            string fileName = Assembly.GetAssembly(typeof(Settings)).Location;
+            fileName = fileName.Substring(0, fileName.LastIndexOfAny(new[] { '\\', '/' }));
+            return fileName;
         }
     }
 }

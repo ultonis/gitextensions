@@ -11,6 +11,7 @@ using GitCommands;
 using ResourceManager.Translation;
 using PatchApply;
 using GitUI.Hotkey;
+using GitUI.Script;
 
 namespace GitUI
 {
@@ -89,12 +90,13 @@ namespace GitUI
 
         #endregion
 
-        private readonly GitCommandsInstance _gitGetUnstagedCommand;
+        private GitCommandsInstance _gitGetUnstagedCommand;
         private readonly SynchronizationContext _syncContext;
         public bool NeedRefresh;
         private GitItemStatus _currentItem;
         private bool _currentItemStaged;
         private readonly ToolStripItem _StageSelectedLinesToolStripMenuItem;
+        private readonly ToolStripItem _ResetSelectedLinesToolStripMenuItem;
 
         public FormCommit()
         {
@@ -121,14 +123,11 @@ namespace GitUI
             Unstaged.DoubleClick += Unstaged_DoubleClick;
             Staged.DoubleClick += Staged_DoubleClick;
 
-            _gitGetUnstagedCommand = new GitCommandsInstance();
-            _gitGetUnstagedCommand.Exited += GitCommandsExited;
-
             Unstaged.Focus();
 
             SelectedDiff.AddContextMenuEntry(null, null);
             _StageSelectedLinesToolStripMenuItem = SelectedDiff.AddContextMenuEntry(_stageSelectedLines.Text, StageSelectedLinesToolStripMenuItemClick);
-            SelectedDiff.AddContextMenuEntry(_resetSelectedLines.Text, ResetSelectedLinesToolStripMenuItemClick);
+            _ResetSelectedLinesToolStripMenuItem = SelectedDiff.AddContextMenuEntry(_resetSelectedLines.Text, ResetSelectedLinesToolStripMenuItemClick);
 
             splitMain.SplitterDistance = Settings.CommitDialogSplitter;
 
@@ -222,15 +221,39 @@ namespace GitUI
         #endregion
 
 
+        public void ShowDialogWhenChanges()
+        {
+            Initialize();
+            while (_gitGetUnstagedCommand.IsRunning)
+            {
+                Thread.Sleep(200);
+            }
+
+            var allChangedFiles = GitCommandHelpers.GetAllChangedFilesFromString(_gitGetUnstagedCommand.Output.ToString());
+            if (allChangedFiles.Count > 0)
+            {
+                ShowDialog();
+            }
+            else
+            {
+                DisposeGitGetUnstagedCommand();
+            }
+        }
+
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            DisposeGitGetUnstagedCommand();
+
+            base.OnClosing(e);
+        }
+
+        private void DisposeGitGetUnstagedCommand()
         {
             if (_gitGetUnstagedCommand != null)
             {
                 _gitGetUnstagedCommand.Exited -= GitCommandsExited;
                 _gitGetUnstagedCommand.Dispose();
             }
-
-            base.OnClosing(e);
         }
 
         private void StageSelectedLinesToolStripMenuItemClick(object sender, EventArgs e)
@@ -245,7 +268,11 @@ namespace GitUI
 
             if (!string.IsNullOrEmpty(patch))
             {
-                GitCommandHelpers.RunCmd(Settings.GitCommand, args, patch);
+                string output = GitCommandHelpers.RunCmd(Settings.GitCommand, args, patch);
+                if (!string.IsNullOrEmpty(output))
+                {
+                    MessageBox.Show(output);
+                }
                 ScanClick(null, null);
             }
         }
@@ -261,11 +288,15 @@ namespace GitUI
             if (_currentItemStaged) //staged
                 args += " --index";
 
-            string patch = Patch.GetSelectedLinesAsPatch(SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(), true);
+            string patch = PatchManager.GetSelectedLinesAsPatch(SelectedDiff.GetText(), SelectedDiff.GetSelectionPosition(), SelectedDiff.GetSelectionLength(), _currentItemStaged);
 
             if (!string.IsNullOrEmpty(patch))
             {
-                GitCommandHelpers.RunCmd(Settings.GitCommand, args, patch);
+                string output = GitCommandHelpers.RunCmd(Settings.GitCommand, args, patch);
+                if (!string.IsNullOrEmpty(output))
+                {
+                    MessageBox.Show(output);
+                }
                 ScanClick(null, null);
             }
         }
@@ -285,16 +316,22 @@ namespace GitUI
 
             Cursor.Current = Cursors.WaitCursor;
 
+            if (_gitGetUnstagedCommand == null)
+            {
+                _gitGetUnstagedCommand = new GitCommandsInstance();
+                _gitGetUnstagedCommand.Exited += GitCommandsExited;
+            }
+
             // Load unstaged files
             var allChangedFilesCmd =
                 GitCommandHelpers.GetAllChangedFilesCmd(
                     !showIgnoredFilesToolStripMenuItem.Checked,
                     showUntrackedFilesToolStripMenuItem.Checked);
             _gitGetUnstagedCommand.CmdStartProcess(Settings.GitCommand, allChangedFilesCmd);
+ 
             Loading.Visible = true;
             LoadingStaged.Visible = true;
 
-            AcceptButton = Commit;
             Cursor.Current = Cursors.Default;
         }
 
@@ -364,6 +401,7 @@ namespace GitUI
             }
 
             _StageSelectedLinesToolStripMenuItem.Text = staged ? _unstageSelectedLines.Text : _stageSelectedLines.Text;
+            _ResetSelectedLinesToolStripMenuItem.Enabled = staged;
         }
 
         private void TrackedSelectionChanged(object sender, EventArgs e)
@@ -422,6 +460,8 @@ namespace GitUI
             {
                 SetCommitMessageFromTextBox(Message.Text);
 
+                ScriptManager.RunEventScripts(ScriptEvent.BeforeCommit);
+
                 var form = new FormProcess(GitCommandHelpers.CommitCmd(amend, toolAuthor.Text));
                 form.ShowDialog();
 
@@ -429,6 +469,8 @@ namespace GitUI
 
                 if (form.ErrorOccurred())
                     return;
+
+                ScriptManager.RunEventScripts(ScriptEvent.AfterCommit);
 
                 Message.Text = string.Empty;
 
@@ -756,7 +798,10 @@ namespace GitUI
 
         private void FormCommitShown(object sender, EventArgs e)
         {
-            Initialize();
+            if (_gitGetUnstagedCommand == null)
+                Initialize();
+
+            AcceptButton = Commit;
 
             var message = GitCommandHelpers.GetMergeMessage();
 

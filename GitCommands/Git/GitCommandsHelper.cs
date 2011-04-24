@@ -516,9 +516,33 @@ namespace GitCommands
         {
             using (var ms = (MemoryStream)GetFileStream(blob)) //Ugly, has implementation info.
             {
-                using (FileStream fileOut = File.Create(saveAs))
+                byte[] buf;
+                ConfigFile localConfig = GetLocalConfig();
+                bool convertcrlf = false;
+                if (localConfig.HasValue("core.autocrlf"))
                 {
-                    byte[] buf = ms.GetBuffer();
+                    convertcrlf = localConfig.GetValue("core.autocrlf").Equals("true",StringComparison.OrdinalIgnoreCase);
+                }else{
+                    ConfigFile globalConfig = GetGlobalConfig();
+                    convertcrlf = globalConfig.GetValue("core.autocrlf").Equals("true",StringComparison.OrdinalIgnoreCase);
+                }
+
+                buf = ms.ToArray();                
+                if (convertcrlf)
+                {
+                    if (!FileHelper.IsBinaryFile(saveAs) &&
+                        !FileHelper.IsBinaryFileAccordingToContent(buf))
+                    {
+                        buf = null;
+                        StreamReader reader = new StreamReader(ms, Settings.Encoding);
+                        String sfileout = reader.ReadToEnd();
+                        sfileout = sfileout.Replace("\r\n", "\n").Replace("\r", "\n").Replace("\n", "\r\n");
+                        buf = Settings.Encoding.GetBytes(sfileout);
+                    }
+                }
+
+                using (FileStream fileOut = File.Create(saveAs))
+                {                    
                     fileOut.Write(buf, 0, buf.Length);
                 }
             }
@@ -745,16 +769,27 @@ namespace GitCommands
             return RunCmd(Settings.GitCommand, "shortlog -s -n");
         }
 
-        public static string DeleteBranch(string branchName, bool force)
+        public static string DeleteBranch(string branchName, bool force, bool remoteBranch)
         {
-            return RunCmd(Settings.GitCommand, DeleteBranchCmd(branchName, force));
+            return RunCmd(Settings.GitCommand, DeleteBranchCmd(branchName, force, remoteBranch));
         }
 
-        public static string DeleteBranchCmd(string branchName, bool force)
+        public static string DeleteBranchCmd(string branchName, bool force, bool remoteBranch)
         {
+            StringBuilder cmd = new StringBuilder("branch");
             if (force)
-                return "branch -D \"" + branchName + "\"";
-            return "branch -d \"" + branchName + "\"";
+                cmd.Append(" -D");
+            else
+                cmd.Append(" -d");
+
+            if (remoteBranch)
+                cmd.Append(" -r");
+
+            cmd.Append(" \"");
+            cmd.Append(branchName);
+            cmd.Append("\"");
+
+            return cmd.ToString();
         }
 
         public static string DeleteTag(string tagName)
@@ -1536,7 +1571,7 @@ namespace GitCommands
 
         public static ConfigFile GetGlobalConfig()
         {
-            return new ConfigFile(Environment.GetEnvironmentVariable("HOME") + Settings.PathSeparator + ".gitconfig");
+            return new ConfigFile(ConfigFile.GetPath());
         }
 
         public static ConfigFile GetLocalConfig()
@@ -2032,14 +2067,28 @@ namespace GitCommands
 
         public static string GetSelectedBranch()
         {
-            var branches = RunCmd(Settings.GitCommand, "branch");
-            var branchStrings = branches.Split('\n');
-            foreach (var branch in branchStrings)
+            string head;
+            string headFileName = Settings.WorkingDirGitDir() + "\\HEAD";
+            if (File.Exists(headFileName))
             {
-                if (branch.IndexOf('*') > -1)
-                    return branch.Trim('*', ' ');
+                head = File.ReadAllText(headFileName);
+                if (!head.Contains("ref:"))
+                    head = "(no branch)";
             }
-            return "";
+            else
+            {
+                int exitcode;
+                head = RunCmd(Settings.GitCommand, "symbolic-ref HEAD", out exitcode);
+                if (exitcode == 1)
+                    head = "(no branch)";
+            }
+
+            if (!string.IsNullOrEmpty(head))
+            {
+                return head.Replace("ref:", "").Replace("refs/heads/", string.Empty).Trim();
+            }
+
+            return string.Empty;
         }
 
         public static List<GitHead> GetRemoteHeads(string remote, bool tags, bool branches)
