@@ -14,6 +14,8 @@ using ICSharpCode.TextEditor.Util;
 using GitUI.RepoHosting;
 using System.Threading;
 using GitUI.Hotkey;
+using System.Drawing;
+using System.Collections.Specialized;
 
 namespace GitUI
 {
@@ -53,8 +55,13 @@ namespace GitUI
             GitTree.ImageList.Images.Add(Properties.Resources._40); //Folder
             GitTree.ImageList.Images.Add(Properties.Resources._39); //Submodule
 
+            GitTree.MouseDown += new MouseEventHandler(GitTree_MouseDown);
+            GitTree.MouseMove += new MouseEventHandler(GitTree_MouseMove);
+
             this.HotkeysEnabled = true;
             this.Hotkeys = HotkeySettingsManager.LoadHotkeys(HotkeySettingsName);
+
+            
         }
 
         private void ShowDashboard()
@@ -215,7 +222,7 @@ namespace GitUI
                 ShowRevisions();
 
             _NO_TRANSLATE_Workingdir.Text = Settings.WorkingDir;
-            Text = Settings.WorkingDir + " - Git Extensions";
+            Text = GenerateWindowTitle(Settings.WorkingDir, validWorkingDir);
 
             CheckForMergeConflicts();
             UpdateStashCount();
@@ -312,6 +319,50 @@ namespace GitUI
                 statusStrip.Show();
             else
                 statusStrip.Hide();
+        }
+
+        /// <summary>
+        /// Generates main window title according to given repository.
+        /// </summary>
+        /// <param name="workingDir">Path to repository.</param>
+        /// <param name="isWorkingDirValid">If the given path contains valid repository.</param>
+        private static string GenerateWindowTitle(string workingDir, bool isWorkingDirValid)
+        {
+            const string defaultTitle = "Git Extensions";
+            const string repositoryTitleFormat = "{0} - Git Extensions";
+
+            if (!isWorkingDirValid)
+                return defaultTitle;
+            string repositoryDescription = ReadRepositoryDescription(workingDir) ?? Directory.GetParent(workingDir).Name;
+            return string.Format(repositoryTitleFormat, repositoryDescription);
+        }
+
+        /// <summary>
+        /// Reads repository description's first line from ".git\description" file.
+        /// </summary>
+        /// <param name="workingDir">Path to repository.</param>
+        /// <returns>If the repository has description, returns that description, else returns <c>null</c>.</returns>
+        private static string ReadRepositoryDescription(string workingDir)
+        {
+            const string repositoryDescriptionFileName = "description";
+            const string repositoryDirectoryName = ".git";
+            const string defaultDescription = "Unnamed repository; edit this file 'description' to name the repository.";
+
+            var repositoryPath = Path.Combine(workingDir, repositoryDirectoryName);
+            var repositoryDescriptionFilePath = Path.Combine(repositoryPath, repositoryDescriptionFileName);
+            if (!File.Exists(repositoryDescriptionFilePath))
+                return null;
+            try
+            {
+                var repositoryDescription = File.ReadAllLines(repositoryDescriptionFilePath).FirstOrDefault();
+                return string.Equals(repositoryDescription, defaultDescription, StringComparison.CurrentCulture)
+                           ? null
+                           : repositoryDescription;
+            }
+            catch (IOException)
+            {
+                return null;
+            }
         }
 
         private void InitToolStripBranchFilter(bool local, bool remote)
@@ -904,7 +955,7 @@ namespace GitUI
             this.Hotkeys = HotkeySettingsManager.LoadHotkeys(HotkeySettingsName);
             Initialize();
             RevisionGrid.ReloadHotkeys();
-            RevisionGrid.ReloadTranslation(); 
+            RevisionGrid.ReloadTranslation();
             RevisionGrid.ForceRefreshRevisions();
         }
 
@@ -1391,7 +1442,7 @@ namespace GitUI
 
             string output;
             if (revisions.Count == 1)   // single item selected
-                output = GitCommandHelpers.OpenWithDifftool(selectedItem, revisions[0].Guid, 
+                output = GitCommandHelpers.OpenWithDifftool(selectedItem, revisions[0].Guid,
                                                                   revisions[0].ParentGuids[0]);
             else                        // multiple items selected
                 output = GitCommandHelpers.OpenWithDifftool(selectedItem, revisions[0].Guid,
@@ -1817,7 +1868,7 @@ namespace GitUI
             else
             {
                 MessageBox.Show("No revision found.");
-            }                        
+            }
         }
 
         private void toggleSplitViewLayout_Click(object sender, EventArgs e)
@@ -1846,5 +1897,57 @@ namespace GitUI
                     new FormEditor(fileName).ShowDialog();
                 }
         }
+
+        #region Git file tree drag-drop
+        private Rectangle gitTreeDragBoxFromMouseDown;
+
+        private void GitTree_MouseDown(object sender, MouseEventArgs e)
+        {
+            //DRAG
+            if (e.Button == MouseButtons.Left)
+            {
+                // Remember the point where the mouse down occurred. 
+                // The DragSize indicates the size that the mouse can move 
+                // before a drag event should be started.               
+                Size dragSize = SystemInformation.DragSize;
+
+                // Create a rectangle using the DragSize, with the mouse position being
+                // at the center of the rectangle.
+                gitTreeDragBoxFromMouseDown = new Rectangle(new Point(e.X - (dragSize.Width / 2),
+                                                                e.Y - (dragSize.Height / 2)),
+                                                                dragSize);
+            }
+        }
+
+        void GitTree_MouseMove(object sender, MouseEventArgs e)
+        {
+            //DRAG
+            // If the mouse moves outside the rectangle, start the drag.
+            if (gitTreeDragBoxFromMouseDown != Rectangle.Empty &&
+                !gitTreeDragBoxFromMouseDown.Contains(e.X, e.Y))
+            {
+                StringCollection fileList = new StringCollection();
+
+                //foreach (GitItemStatus item in SelectedItems)
+                if (GitTree.SelectedNode != null)
+                {
+                    GitItem item = GitTree.SelectedNode.Tag as GitItem;
+                    if (item != null)
+                    {
+                        string fileName = GitCommands.Settings.WorkingDir + item.FileName;
+
+                        fileList.Add(fileName.Replace('/', '\\'));
+                    }
+
+                    DataObject obj = new DataObject();
+                    obj.SetFileDropList(fileList);
+
+                    // Proceed with the drag and drop, passing in the list item.                   
+                    DoDragDrop(obj, DragDropEffects.Copy);
+                    gitTreeDragBoxFromMouseDown = Rectangle.Empty;
+                }
+            }
+        }
+        #endregion
     }
 }
