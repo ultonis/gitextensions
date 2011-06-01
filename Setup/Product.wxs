@@ -80,6 +80,11 @@
       </Component>
       <Component Id="GitExtensions.exe" Guid="*">
         <File Source="..\GitExtensions\bin\Release\GitExtensions.exe"/>
+        <ProgId Id="GitExtensions" Description="Git Extentions Shortcut" Icon="cow_head.ico" Advertise="yes">
+          <Extension Id="gitext">
+            <Verb Id="open" Command="Open Git Extentions Repository" Argument="openrepo &quot;%1&quot;" />
+          </Extension>
+        </ProgId>
       </Component>
       <Component Id="Gravatar.dll" Guid="*">
         <File Source="..\GitExtensions\bin\Release\Gravatar.dll"/>
@@ -160,7 +165,7 @@
         <File Source="..\Plugins\AutoCompileSubmodules\AutoCompileSubmodules\bin\Release\AutoCompileSubmodules.dll"/>
       </Component>
       <Component Id="CreateLocalBranches.dll" Guid="*">
-        <File Source="..\Plugins\Statistics\CreateLocalBranches\bin\Release\CreateLocalBranches.dll"/>
+        <File Source="..\Plugins\CreateLocalBranches\bin\Release\CreateLocalBranches.dll"/>
       </Component>
       <Component Id="GitStatistics.dll" Guid="*">
         <File Source="..\Plugins\Statistics\GitStatistics\bin\Release\GitStatistics.dll"/>
