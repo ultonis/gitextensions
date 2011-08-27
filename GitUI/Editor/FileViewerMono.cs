@@ -21,6 +21,11 @@ namespace GitUI.Editor
             TextEditor.MouseMove += TextArea_MouseLeave;
         }
 
+        public new Font Font
+        {
+            set { TextEditor.Font = value; }
+        }
+
         public new event EventHandler MouseLeave;
 
         public void Find()
@@ -196,6 +201,11 @@ namespace GitUI.Editor
             get { return 0; }
         }
 
+        public void FocusTextArea()
+        {
+            TextEditor.Select();
+        }
+
         public bool IsReadOnly
         {
             get
@@ -311,6 +321,11 @@ namespace GitUI.Editor
 
         public void SetHighlighting(string  s)
         {
+        }
+
+        public void SetFileLoader(Func<bool, Tuple<int, string>> fileLoader)
+        {
+            // todo
         }
 
         #endregion

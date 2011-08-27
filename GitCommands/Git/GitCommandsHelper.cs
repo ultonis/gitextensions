@@ -116,6 +116,10 @@ namespace GitCommands
 
         public static void SetEnvironmentVariable(bool reload)
         {
+            string path = Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Process);
+            if (!string.IsNullOrEmpty(Settings.GitBinDir) && !path.Contains(Settings.GitBinDir))
+                Environment.SetEnvironmentVariable("PATH", string.Concat(path, ";", Settings.GitBinDir), EnvironmentVariableTarget.Process);
+
             if (!string.IsNullOrEmpty(Settings.CustomHomeDir))
             {
                 Environment.SetEnvironmentVariable(
@@ -529,13 +533,15 @@ namespace GitCommands
                 bool convertcrlf = false;
                 if (localConfig.HasValue("core.autocrlf"))
                 {
-                    convertcrlf = localConfig.GetValue("core.autocrlf").Equals("true",StringComparison.OrdinalIgnoreCase);
-                }else{
+                    convertcrlf = localConfig.GetValue("core.autocrlf").Equals("true", StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
                     ConfigFile globalConfig = GetGlobalConfig();
-                    convertcrlf = globalConfig.GetValue("core.autocrlf").Equals("true",StringComparison.OrdinalIgnoreCase);
+                    convertcrlf = globalConfig.GetValue("core.autocrlf").Equals("true", StringComparison.OrdinalIgnoreCase);
                 }
 
-                buf = ms.ToArray();                
+                buf = ms.ToArray();
                 if (convertcrlf)
                 {
                     if (!FileHelper.IsBinaryFile(saveAs) &&
@@ -550,7 +556,7 @@ namespace GitCommands
                 }
 
                 using (FileStream fileOut = File.Create(saveAs))
-                {                    
+                {
                     fileOut.Write(buf, 0, buf.Length);
                 }
             }
@@ -737,9 +743,8 @@ namespace GitCommands
                 string cmd = "log -n 1 --format=format:" + formatString + " " + Parents[i];
                 var RevInfo = RunCmd(Settings.GitCommand, cmd);
                 string[] Infos = RevInfo.Split('\n');
-                var Revision = new GitRevision
+                var Revision = new GitRevision(Parents[i])
                 {
-                    Guid = Parents[i],
                     TreeGuid = Infos[0],
                     Author = Infos[1],
                     Committer = Infos[3],
@@ -1419,15 +1424,23 @@ namespace GitCommands
         {
             Directory.SetCurrentDirectory(Settings.WorkingDir);
 
-            return RunCmd(Settings.GitCommand, RebaseCmd(branch, false));
+            return RunCmd(Settings.GitCommand, RebaseCmd(branch, false, false));
         }
 
-        public static string RebaseCmd(string branch, bool interactive)
+        public static string RebaseCmd(string branch, bool interactive, bool autosquash)
         {
-            if (interactive)
-                return "rebase -i \"" + branch + "\"";
+            StringBuilder sb = new StringBuilder("rebase ");
 
-            return "rebase \"" + branch + "\"";
+            if (interactive)
+            {
+                sb.Append(" -i ");
+                sb.Append(autosquash ? "--autosquash " : "--no-autosquash ");
+            }
+
+            sb.Append('"');
+            sb.Append(branch);
+            sb.Append('"');
+            return sb.ToString();
         }
 
 
@@ -1521,9 +1534,19 @@ namespace GitCommands
             return "am --3way --signoff \"" + FixPath(patchFile) + "\"";
         }
 
+        public static string PatchCmdIgnoreWhitespace(string patchFile)
+        {
+            return "am --3way --signoff --ignore-whitespace \"" + FixPath(patchFile) + "\"";
+        }
+
         public static string PatchDirCmd(string patchDir)
         {
             return "am --3way --signoff --directory=\"" + FixPath(patchDir) + "\"";
+        }
+
+        public static string PatchDirCmdIgnoreWhitespace(string patchDir)
+        {
+            return "am --3way --signoff --ignore-whitespace --directory=\"" + FixPath(patchDir) + "\"";
         }
 
         public static string UpdateRemotes()
@@ -1593,6 +1616,15 @@ namespace GitCommands
             return configFile.GetValue(setting);
         }
 
+        public static string GetEffectiveSetting(string setting)
+        {
+            var localConfig = GetLocalConfig();
+            if (localConfig.HasValue(setting))
+                return localConfig.GetValue(setting);
+
+            return GetGlobalConfig().GetValue(setting);
+        }
+
         public static void UnsetSetting(string setting)
         {
             var configFile = GetLocalConfig();
@@ -1651,6 +1683,9 @@ namespace GitCommands
             from = FixPath(from);
             to = FixPath(to);
 
+            if (Settings.UsePatienceDiffAlgorithm)
+                extraDiffArguments = string.Concat(extraDiffArguments, " --patience");
+
             var patchManager = new PatchManager();
             var arguments = string.Format("diff{0} -M -C \"{1}\" \"{2}\" -- {3} {4}", extraDiffArguments, to, from, fileName, oldFileName);
             patchManager.LoadPatch(RunCachableCmd(Settings.GitCommand, arguments), false);
@@ -1666,6 +1701,9 @@ namespace GitCommands
 
         public static List<Patch> GetDiff(string from, string to, string extraDiffArguments)
         {
+            if (Settings.UsePatienceDiffAlgorithm)
+                extraDiffArguments = string.Concat(extraDiffArguments, " --patience");
+
             var patchManager = new PatchManager();
             var arguments = string.Format("diff{0} \"{1}\" \"{2}\"", extraDiffArguments, from, to);
             patchManager.LoadPatch(RunCachableCmd(Settings.GitCommand, arguments), false);
@@ -1689,7 +1727,7 @@ namespace GitCommands
             else
             {
                 result = RunCachableCmd(Settings.GitCommand, cmd);
-                
+
             }
             return GetAllChangedFilesFromString(result, true);
         }
@@ -1767,15 +1805,21 @@ namespace GitCommands
             if (string.IsNullOrEmpty(statusString))
                 return diffFiles;
 
-            /*The status string can show warnings. This is a text blok in front
+            /*The status string can show warnings. This is a text blok at the start or at the beginning
               of the file status. Strip it. Example:
                 warning: LF will be replaced by CRLF in CustomDictionary.xml.
                 The file will have its original line endings in your working directory.
                 warning: LF will be replaced by CRLF in FxCop.targets.
                 The file will have its original line endings in your working directory.*/
             string trimmedStatus = statusString.Trim(new char[] { '\n', '\r' });
-            if (trimmedStatus.Contains("\n") || trimmedStatus.Contains("\r"))
-                trimmedStatus = trimmedStatus.Substring(trimmedStatus.LastIndexOfAny(new char[] { '\n', '\r' })).Trim(new char[] { '\n', '\r' });
+            int lastNewLinePos = trimmedStatus.LastIndexOfAny(new char[] { '\n', '\r' });
+            if (lastNewLinePos > 0)
+            {
+                if (trimmedStatus.IndexOf('\0') > lastNewLinePos) //Warning at beginning
+                    trimmedStatus = trimmedStatus.Substring(0, lastNewLinePos).Trim(new char[] { '\n', '\r' });
+                else                                              //Warning at end
+                    trimmedStatus = trimmedStatus.Substring(lastNewLinePos).Trim(new char[] { '\n', '\r' });
+            }
 
             //Split all files on '\0' (WE NEED ALL COMMANDS TO BE RUN WITH -z! THIS IS ALSO IMPORTANT FOR ENCODING ISSUES!)
             var files = trimmedStatus.Split(new char[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
@@ -1963,9 +2007,12 @@ namespace GitCommands
             if (!string.IsNullOrEmpty(oldFileName))
                 oldFileName = string.Concat("\"", FixPath(oldFileName), "\"");
 
-            var args = "diff " + extraDiffArguments + " -- " + fileName;
+            if (Settings.UsePatienceDiffAlgorithm)
+                extraDiffArguments = string.Concat(extraDiffArguments, " --patience");
+
+            var args = string.Concat("diff ", extraDiffArguments, " -- ", fileName);
             if (staged)
-                args = "diff -M -C --cached" + extraDiffArguments + " -- " + fileName + " " + oldFileName;
+                args = string.Concat("diff -M -C --cached", extraDiffArguments, " -- ", fileName, " ", oldFileName);
 
             return RunCmd(Settings.GitCommand, args);
         }
@@ -2090,10 +2137,10 @@ namespace GitCommands
             return RunCmd(Settings.GitCommand, "reset HEAD -- \"" + FixPath(file) + "\"");
         }
 
-        public static string GetSelectedBranch()
+        public static string GetSelectedBranch(string repositoryPath)
         {
             string head;
-            string headFileName = Settings.WorkingDirGitDir() + "\\HEAD";
+            string headFileName = Path.Combine(GetGitDirectory(repositoryPath), "HEAD");
             if (File.Exists(headFileName))
             {
                 head = File.ReadAllText(headFileName);
@@ -2105,7 +2152,7 @@ namespace GitCommands
                 int exitcode;
                 head = RunCmd(Settings.GitCommand, "symbolic-ref HEAD", out exitcode);
                 if (exitcode == 1)
-                    head = "(no branch)";
+                    return "(no branch)";
             }
 
             if (!string.IsNullOrEmpty(head))
@@ -2114,6 +2161,11 @@ namespace GitCommands
             }
 
             return string.Empty;
+        }
+
+        public static string GetSelectedBranch()
+        {
+            return GetSelectedBranch(Settings.WorkingDir);
         }
 
         public static List<GitHead> GetRemoteHeads(string remote, bool tags, bool branches)
@@ -2197,10 +2249,14 @@ namespace GitCommands
             return string.Empty;
         }
 
-        public static string[] GetFiles(string filePattern)
+        public static IList<string> GetFiles(string filePattern)
         {
+            // filter duplicates out of the result because options -c and -m may return 
+            // same files at times
             return RunCmd(Settings.GitCommand, "ls-files -z -o -m -c \"" + filePattern + "\"")
-                .Split(new char[] { '\0', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                .Split(new[] {'\0', '\n'}, StringSplitOptions.RemoveEmptyEntries)
+                .Distinct()
+                .ToList();
         }
 
         public static List<GitItem> GetFileChanges(string file)
@@ -2506,6 +2562,12 @@ namespace GitCommands
                 return fileName.Substring(fileName.LastIndexOf('.') + 1);
 
             return null;
+        }
+
+        public static string GetGitDirectory(string repositoryPath)
+        {
+            var candidatePath = Path.Combine(repositoryPath, ".git");
+            return Directory.Exists(candidatePath) ? candidatePath : repositoryPath;
         }
 
         /// <summary>
